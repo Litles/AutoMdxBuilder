@@ -1,0 +1,415 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @Date    : 2023-07-05 14:49:12
+# @Author  : Litles (litlesme@gmail.com)
+# @Link    : https://github.com/Litles
+# @Version : 1.0
+
+import os, re
+import chardet
+from datetime import datetime
+from settings import Settings
+
+class ImgDict:
+    """词典属性"""
+    def __init__(self):
+        self.settings = Settings()
+        # 初始化, 检查原材料
+        self.proc_flg, self.proc_flg_toc, self.proc_flg_syns = self._check_raw_files()
+
+
+    def _check_raw_files(self):
+        """ 检查原材料
+        * 必要文本存在(文本编码均要是 utf-8 无 bom)
+        * 图像文件夹存在, 正文起始数要大于1, 图像个数要大于正文起始数
+        * 图像个数与索引范围匹配, 不冲突
+        * 检查 info.html 的编码
+        """
+        proc_flg = True
+        proc_flg_toc = True
+        proc_flg_syns = True
+        dir_imgs = os.path.join(self.settings.dir_input, self.settings.dname_imgs)
+        file_index = os.path.join(self.settings.dir_input, self.settings.fname_index)
+        file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
+        file_toc = os.path.join(self.settings.dir_input, self.settings.fname_toc)
+        file_dict_info = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
+        min_index = 0
+        max_index = 0
+        # 1.检查索引文件
+        if not os.path.exists(file_index):
+            print(f"ERROR: 索引文件 {file_index} 不存在")
+            proc_flg = False
+        elif self._detect_code(file_index) != 'utf-8':
+            print(f"ERROR: 文本文件 {file_index} 不是 utf-8 编码格式")
+            proc_flg = False
+        else:
+            # 读取词条索引
+            with open(file_index, 'r', encoding='utf-8') as fr:
+                lines = fr.readlines()
+                pat = re.compile(r'^([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
+                for line in lines:
+                    if pat.search(line):
+                        i = int(pat.search(line).group(2))
+                        max_index =  max(max_index, i)
+        # 2.检查目录文件
+        if not os.path.exists(file_toc):
+            print(f"WARN: 书签目录文件 {file_toc} 不存在")
+            proc_flg_toc = False
+        elif self._detect_code(file_toc) != 'utf-8':
+            print(f"ERROR: 文本文件 {file_toc} 不是 utf-8 编码格式")
+            proc_flg = False
+        elif self._is_blank_file(file_toc):
+            proc_flg_toc = False
+        else:
+            # 读取目录索引
+            with open(file_toc, 'r', encoding='utf-8') as fr:
+                lines = fr.readlines()
+                pat = re.compile(r'^(\t*)([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
+                for line in lines:
+                    if pat.search(line):
+                        i = int(pat.search(line).group(3))
+                        min_index =  min(min_index, i)
+            if self.settings.body_start < abs(min_index) + 1:
+                print(f"ERROR: 正文起始页设置有误(小于最小索引)")
+                proc_flg = False
+        # 3.检查同义词文件
+        if not os.path.exists(file_syns):
+            print(f"WARN: 同义词文件 {file_syns} 不存在")
+            proc_flg_syns = False
+        elif self._detect_code(file_syns) != 'utf-8':
+            print(f"ERROR: 文本文件 {file_syns} 不是 utf-8 编码格式")
+            proc_flg = False
+        elif self._is_blank_file(file_syns):
+            proc_flg_syns = False
+        # 4.检查图像
+        n = 0
+        if os.path.exists(dir_imgs):
+            for fname in os.listdir(dir_imgs):
+                n += 1
+        if n == 0:
+            print(f"ERROR: 图像文件夹 {dir_imgs} 不存在或为空")
+            proc_flg = False
+        elif n < self.settings.body_start:
+            print(f"ERROR: 图像数量不足(少于起始页码)")
+            proc_flg = False
+        elif n < max_index - min_index:
+            print(f"ERROR: 图像数量不足(少于索引范围)")
+            proc_flg = False
+
+        # 5.检查 info.html
+        if os.path.exists(file_dict_info) and self._detect_code(file_dict_info) != 'utf-8':
+            print(f"ERROR: 文件 {file_dict_info} 不是 utf-8 编码格式")
+            proc_flg = False
+        return proc_flg, proc_flg_toc, proc_flg_syns
+
+
+    def _detect_code(self, txt_file):
+        with open(txt_file, 'rb') as frb:
+            data = frb.read()
+            dcts = chardet.detect(data)
+        return dcts["encoding"]
+
+
+    def _is_blank_file(self, txt_file):
+        blank_flg = False
+        with open(txt_file, 'r', encoding='utf-8') as fr:
+            text = fr.read()
+            if re.match(r'^\s*$', text):
+                blank_flg = True
+        return blank_flg
+
+
+    def make_source_file(self):
+        """ 制作预备 txt 源文本 """
+        if self.proc_flg:
+            print('\n材料检查通过, 开始制作词典……\n')
+            # 创建临时输出目录
+            if not os.path.exists(self.settings.dir_output_tmp):
+                os.makedirs(self.settings.dir_output_tmp)
+            # 清空目录下所有旧 txt,html 文件
+            for fname in os.listdir(self.settings.dir_output_tmp):
+                fpath = os.path.join(self.settings.dir_output_tmp, fname)
+                if os.path.isfile(fpath) and (fpath.endswith('.txt') or fpath.endswith('.html')):
+                    os.remove(fpath)
+            step = 0
+            # (一) 生成主体(图像)词条
+            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_main)
+            dir_imgs_out, p_total, n_len = self._make_entries_main(file_1)
+            step += 1
+            print(f'\n{step}.文件 "{self.settings.fname_entries_main}" 已生成；')
+            # (二) 生成总目词条
+            if self.proc_flg_toc:
+                file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_toc)
+                self._make_entries_toc(file_2)
+                step += 1
+                print(f'{step}.文件 "{self.settings.fname_entries_toc}" 已生成；')
+            # (三) 生成词目重定向
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_headword)
+            self._make_redirects_headword(n_len, file_3, self.proc_flg_toc)
+            step += 1
+            print(f'{step}.文件 "{self.settings.fname_redirects_headword}" 已生成；')
+            # (四) 生成近义词重定向
+            if self.proc_flg_syns:
+                file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)
+                self._make_redirects_syn(file_4)
+                step += 1
+                print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
+            # (五) 合并成最终 txt 文本
+            entry_total = 0 # 词条数
+            file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
+            # 用临时 xxx 文件去存储 (防止自身 txt 被读, 写两遍)
+            file_tmp = os.path.join(self.settings.dir_output_tmp, 'tmp.xxx')
+            with open(file_tmp, 'a+', encoding='utf-8') as fa:
+                # 遍历目录下的所有 txt 文件
+                for fname in os.listdir(self.settings.dir_output_tmp):
+                    fp = os.path.join(self.settings.dir_output_tmp, fname)
+                    if os.path.isfile(fp) and fp.endswith('.txt'):
+                        with open(fp, 'r', encoding='utf-8') as fr:
+                            lines = fr.readlines()
+                            for line in lines:
+                                if line == '</>\n':
+                                    entry_total += 1
+                                fa.write(line)
+            os.rename(file_tmp, file_final_txt)
+            print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
+            # (六) 生成 css 文件
+            file_css = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
+            with open(file_css, 'w', encoding='utf-8') as fw:
+                fw.write(self.settings.css_text)
+            print(f'\ncss 样式文件 "{self.settings.fname_css}" 生成完毕！')
+            # 5.生成 info.html
+            file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
+            file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
+            with open(file_info, 'a+', encoding='utf-8') as fa:
+                fa.write(f"<div>Name: {self.settings.name}</div>\n<div>Pages: {p_total}</div>\n")
+                fa.write(f"<div>Entries: {entry_total}</div>\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
+                if os.path.exists(file_info_raw):
+                    text = ''
+                    with open(file_info_raw, 'r', encoding='utf-8') as fr:
+                        text = fr.read()
+                    fa.write(text)
+            return self.proc_flg, file_final_txt, dir_imgs_out
+        else:
+            print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
+            return self.proc_flg, None, None
+
+
+    def _make_entries_main(self, file_out):
+        """ (一) 生成主体(图像)词条 """
+        dir_imgs_out, imgs, n_len = self._prepare_imgs()
+        print('图像处理完毕。')
+        # 开始生成词条
+        p_total = len(imgs)
+        with open(file_out, 'a+', encoding='utf-8') as fa:
+            part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
+            part_middle = self._generate_navi_middle()
+            for i in range(p_total):
+                img = imgs[i]
+                part_title = f'{img["title"]}\n'
+                part_img = f'<div class="main-img"><img src="/{img["name"]}"></div>\n'
+                # 生成翻页部分(首末页特殊)
+                # 备用符号: [☚,☛] [☜,☞] [◀,▶] [上一页,下一页] [☚&#12288;&#8197;,&#8197;&#12288;☛]
+                if i == 0:
+                    part_left = ''
+                    part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
+                elif i == p_total-1:
+                    part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
+                    part_right = ''
+                else:
+                    part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
+                    part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
+                # 组合
+                part_top = '<div class="top-navi">' + part_left + part_middle + part_right + '</div>\n'
+                part_bottom = '<div class="bottom-navi">' + part_left + part_middle + part_right + '</div>\n'
+                # 将完整词条写入文件
+                fa.write(part_title+part_css+part_top+part_img+part_bottom+'</>\n')
+        return dir_imgs_out, p_total, n_len
+
+
+    def _prepare_imgs(self):
+        """ 图像预处理(重命名等) """
+        # 图像处理判断
+        copy_flg = True
+        dir_imgs_in = os.path.join(self.settings.dir_input, self.settings.dname_imgs)
+        dir_imgs_out = os.path.join(self.settings.dir_output_tmp, self.settings.dname_imgs)
+        if os.path.exists(dir_imgs_out):
+            size_in = sum(os.path.getsize(os.path.join(dir_imgs_in,f)) for f in os.listdir(dir_imgs_in) if os.path.isfile(os.path.join(dir_imgs_in,f)))
+            size_out = sum(os.path.getsize(os.path.join(dir_imgs_out,f)) for f in os.listdir(dir_imgs_out) if os.path.isfile(os.path.join(dir_imgs_out,f)))
+            if size_out == 0:
+                pass
+            elif size_out == size_in:
+                copy_flg = False
+            else:
+                for fname in os.listdir(dir_imgs_out):
+                    fpath = os.path.join(dir_imgs_out, fname)
+                    if os.path.isfile(fpath):
+                        os.remove(fpath)
+        else:
+            os.makedirs(dir_imgs_out)
+        # 获取图像文件列表
+        img_files = []
+        for fname in os.listdir(dir_imgs_in):
+            fpath = os.path.join(dir_imgs_in, fname)
+            if os.path.isfile(fpath):
+                img_files.append(fpath)
+        # 按旧文件名排序
+        img_files.sort() # 正序排
+        n_len = len(str(len(img_files))) # 获取序号位数
+        # 重命名
+        imgs = []
+        i = 0
+        for img_file in img_files:
+            i += 1
+            f_dir, f_name = os.path.split(img_file)
+            f_ext = os.path.splitext(f_name)[1]
+            # 区分正文和辅页, 辅页多加前缀'B'
+            if i < self.settings.body_start:
+                i_str = str(i).zfill(n_len)
+                f_title_new = f'{self.settings.name_abbr}_B{i_str}'
+            else:
+                i_str = str(i-self.settings.body_start+1).zfill(n_len)
+                f_title_new = f'{self.settings.name_abbr}_{i_str}'
+            imgs.append({'title':f_title_new, 'name':f_title_new+f_ext})
+            # 复制新文件到输出文件夹
+            img_file_new = os.path.join(dir_imgs_out, f_title_new+f_ext)
+            if copy_flg:
+                os.system(f"copy /y {img_file} {img_file_new}")
+        return dir_imgs_out, imgs, n_len
+
+
+    def _generate_navi_middle(self):
+        """ 生成导航栏中间(链接)部分 """
+        html = '<span class="navi-item-middle">'
+        if self.proc_flg_toc:
+            html += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
+            for item in self.settings.navi_items:
+                html += f'<span class="navi-item"><a href="entry://{self.settings.name_abbr}_{item["ref"]}">{item["a"]}</a></span>'
+        else:
+            html += '　'
+        html += f'</span>'
+        return html
+
+
+    def _make_entries_toc(self, file_out):
+        """ (二) 生成总目词条 """
+        # 1.读取目录书签文件
+        file_toc = os.path.join(self.settings.dir_input, self.settings.fname_toc)
+        pairs = self._read_toc_file(file_toc)
+        # 2.生成总目词条
+        with open(file_out, 'a+', encoding='utf-8') as fa:
+            # 开头
+            fa.write(f'TOC_{self.settings.name_abbr}\n<link rel="stylesheet" type="text/css" href="/{self.settings.name_abbr.lower()}.css"/>\n')
+            fa.write('<div class="toc-title">目录</div>\n<div class="toc-text">\n<ul>\n')
+            # 主体部分
+            n_total = len(pairs)
+            tab = '\t'
+            prefix = '<ul>'
+            suffix = '</ul></li>'
+            # 根据层级生成 html 列表结构
+            for i in range(n_total):
+                try:
+                    l_after = pairs[i+1]["level"]
+                except IndexError:
+                    l_after = 0
+                pair = pairs[i]
+                # 与后同
+                if pair["level"] == l_after:
+                    fa.write(f'{tab*pair["level"]}<li><a href="entry://{self.settings.name_abbr}_{pair["title"]}">{pair["title"]}</a></li>\n')
+                # 比后高(说明将要展开)
+                elif pair["level"] < l_after:
+                    fa.write(f'{tab*pair["level"]}<li><a href="entry://{self.settings.name_abbr}_{pair["title"]}">{pair["title"]}</a>{prefix}\n')
+                # 比后低(说明展开到此结束)
+                else:
+                    gap = pair["level"] - l_after
+                    fa.write(f'{tab*pair["level"]}<li><a href="entry://{self.settings.name_abbr}_{pair["title"]}">{pair["title"]}</a></li>{suffix*gap}\n')
+            # 结尾
+            fa.write('</ul>\n</div>\n</>\n')
+
+
+    def _read_toc_file(self, file_toc):
+        pairs = []
+        with open(file_toc, 'r', encoding='utf-8') as fr:
+            lines = fr.readlines()
+            pat = re.compile(r'^(\t*)([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
+            i = 1
+            for line in lines:
+                if pat.search(line):
+                    part_1 = pat.search(line).group(1)
+                    part_2 = pat.search(line).group(2)
+                    part_3 = pat.search(line).group(3)
+                    pair = {
+                        "level": len(part_1),
+                        "title": part_2,
+                        "page": int(part_3)
+                    }
+                    pairs.append(pair)
+                else:
+                    print(f'第{i}行未匹配, 已忽略')
+                i += 1
+        return pairs
+
+
+    def _make_redirects_headword(self, n_len, file_out, proc_flg_toc):
+        """ (三) 生成词目重定向 """
+        # 1a.读取词条索引
+        file_index = os.path.join(self.settings.dir_input, self.settings.fname_index)
+        pairs = []
+        with open(file_index, 'r', encoding='utf-8') as fr:
+            lines = fr.readlines()
+            pat = re.compile(r'^([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
+            i = 1
+            for line in lines:
+                if pat.search(line):
+                    part_1 = pat.search(line).group(1)
+                    part_2 = pat.search(line).group(2)
+                    pair = {
+                        "title": part_1,
+                        "page": int(part_2)
+                    }
+                    pairs.append(pair)
+                else:
+                    print(f'第{i}行未匹配, 已忽略')
+                i += 1
+        # 1b.读取目录索引
+        if proc_flg_toc:
+            file_toc = os.path.join(self.settings.dir_input, self.settings.fname_toc)
+            pairs_toc = self._read_toc_file(file_toc)
+        # 2.生成重定向
+        with open(file_out, 'a+', encoding='utf-8') as fa:
+            # a.词条部分
+            for pair in pairs:
+                fa.write(f'{pair["title"]}\n@@@LINK={self.settings.name_abbr}_{str(pair["page"]).zfill(n_len)}\n</>\n')
+            # b.目录部分
+            if proc_flg_toc:
+                for pair in pairs_toc:
+                    if pair["page"] < 0:
+                        fa.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_B{str(pair["page"]+self.settings.body_start).zfill(n_len)}\n</>\n')
+                    else:
+                        fa.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_{str(pair["page"]).zfill(n_len)}\n</>\n')
+
+
+    def _make_redirects_syn(self, file_out):
+        """ (四) 生成近义词重定向 """
+        # 1.读取重定向索引
+        file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
+        syns = []
+        with open(file_syns, 'r', encoding='utf-8') as fr:
+            lines = fr.readlines()
+            pat = re.compile(r'^([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
+            i = 1
+            for line in lines:
+                if pat.search(line):
+                    part_1 = pat.search(line).group(1)
+                    part_2 = pat.search(line).group(2)
+                    syn = {
+                        "syn": part_1,
+                        "origin": part_2
+                    }
+                    syns.append(syn)
+                else:
+                    print(f'第{i}行未匹配, 已忽略')
+                i += 1
+        # 2.生成重定向
+        with open(file_out, 'a+', encoding='utf-8') as fa:
+            for syn in syns:
+                fa.write(f'{syn["syn"]}\n@@@LINK={syn["origin"]}\n</>\n')
