@@ -208,7 +208,7 @@ class ImgDict:
                 part_title = f'{img["title"]}\n'
                 part_img = f'<div class="main-img"><img src="/{img["name"]}"></div>\n'
                 # 生成翻页部分(首末页特殊)
-                # 备用符号: [☚,☛] [☜,☞] [◀,▶] [上一页,下一页] [☚&#12288;&#8197;,&#8197;&#12288;☛]
+                # 备用: [☚,☛] [☜,☞] [◀,▶] [上一页,下一页] [☚&#12288;&#8197;,&#8197;&#12288;☛]
                 if i == 0:
                     part_left = ''
                     part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
