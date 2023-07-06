@@ -15,13 +15,13 @@
 1. 安装 Python。[Python官网](https://www.python.org) 下载安装 Python 的 `.exe` 包，运行按提示安装即可；
 2. 解压本工具 `AutoMdxBuilder_xx.zip` 作为工作文件夹（假如文件夹名就为 AutoMdxBuilder）；
 3. 安装 Python 模块包。`cmd` 在 AutoMdxBuilder 内执行 `pip install -r requirements.txt`即可（或手动挨个安装 `requirements.txt` 中所列包也行）；
-4. 准备词典制作的原材料。在 AutoMdxBuilder 文件夹内创建子文件夹 raw，将原材料按要求放置其内（**具体参见下面说明**）；
+4. 准备词典制作的原材料。在 AutoMdxBuilder 文件夹内创建子文件夹 `raw`，将原材料按要求放置其内（**具体参见下面说明**）；
 5. 修改好 `settings.py` 配置文件（**具体参见下面说明**）；
-6. 运行 auto_mdx_builder.py （可直接双击）。词典成品产生在 out 子文件夹内，过程文件存放在 _tmp 子文件夹内以备用。
+6. 运行 auto_mdx_builder.py （可直接双击）。词典成品产生在 `out` 子文件夹内，过程文件存放在 `_tmp` 子文件夹内以备用。
 
 ### 原材料准备说明
 
-原材料要求全部放置在子文件夹 raw 内，图像词典制作需要以下材料：
+原材料要求全部放置在子文件夹 `raw` 内，图像词典制作需要以下材料：
 
 * （必须）`imgs` 文件夹：存放图像文件，不限定图片格式，png、jpg 等均可；
 * （必须）`index.txt` 文件：索引文件，格式`词目<TAB>页码数`（页码数是相对正文起始页的，而不是图片序号）；
