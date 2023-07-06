@@ -40,7 +40,13 @@
 
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/sublime_text_k4SnaNJMle.png)
 
-> 有 `toc.txt` 文件才需要设置 `self.navi_items`。`"a"`是显示文字，`"ref"`是与 `toc.txt` 中词目对应的。
+> 有 `toc.txt` 文件才需要设置 `self.navi_items`。`a`的值是显示文字，`ref`的值是与 `toc.txt` 中词目对应的。
+
+### 目录文件 `toc.txt` 说明
+
+该文件可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出，格式大概像这样（行首 <TAB> 缩进表示层级）：
+
+![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/Notepad3_3vrpaponyk.png)
 
 ## 参考
 
