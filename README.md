@@ -40,6 +40,8 @@
 
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/sublime_text_k4SnaNJMle.png)
 
+> 有 `toc.txt` 文件才需要设置 `self.navi_items`。`"a"`是显示文字，`"ref"`是与 `toc.txt` 中词目对应的。
+
 ## 参考
 
 + https://github.com/liuyug/mdict-utils
