@@ -44,7 +44,7 @@
 
 ### 目录文件 `toc.txt` 说明
 
-该文件可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出，格式大概像这样（行首 <TAB> 缩进表示层级）：
+该文件可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出，格式大概像这样（行首 TAB 缩进表示层级）：
 
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/Notepad3_3vrpaponyk.png)
 
