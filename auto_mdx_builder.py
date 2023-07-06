@@ -29,7 +29,12 @@ class AutoMdxBuilder:
             print('\n------------------\n开始打包:')
             os.system(f"mdict --description {file_dict_info} -a {file_final_txt} {ftitle}.mdx")
             # 4.打包 mdd
-            os.system(f"mdict -a {dir_imgs_out} {ftitle}.mdd")
+            if os.path.exists(ftitle+'.mdd'):
+                a = input(f'文件 "{ftitle}.mdd" 已存在, 是否重新打包图像 (Y/N): ')
+                if a in ('Y', 'y'):
+                    os.system(f"mdict -a {dir_imgs_out} {ftitle}.mdd")
+            else:
+                os.system(f"mdict -a {dir_imgs_out} {ftitle}.mdd")
             print('\n打包完毕。\n\n恭喜, 词典已制作完成！')
             # 如果有 css 文件就拷贝过来
             file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
