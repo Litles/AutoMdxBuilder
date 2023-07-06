@@ -63,7 +63,8 @@ div.top-navi{
     margin: 0px 0px 0px 0px;
     padding: 3px 0px;
     border-top: 3px solid #3b264d;
-    background-color: #CD284C; /* ea8790 */
+    background-color: #CC9933; /* CD284C */
+    font-weight: bold;
     text-align: center;
 }
 div.bottom-navi{
@@ -76,7 +77,7 @@ div.bottom-navi{
 /*导航链接*/
 div.top-navi a:link {color: #ffffff;}
 div.top-navi a:hover {background:green;}
-div.top-navi a:visited {color: #ffffff}
+div.top-navi a:visited {color: #ffffff} /* FFFF99 */
 div.bottom-navi a:link {color: blue;}
 div.bottom-navi a:hover {background:yellow;}
 span.navi-item-left{
