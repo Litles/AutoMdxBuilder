@@ -51,7 +51,7 @@
 
 ### （可选）目录文件 `toc.txt` 说明
 
-格式`[<TAB>*]词目<TAB>页码，该文件也可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出，格式大概像这样（行首 TAB 缩进表示层级）：
+格式`[<TAB>*]词目<TAB>页码`，该文件也可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出，格式大概像这样（行首 TAB 缩进表示层级）：
 
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/toc.png)
 
