@@ -10,11 +10,9 @@
 
 ### 使用步骤
 
-这里只介绍 Windows 下使用方法（程序在其他如 Linux 平台也没测试过），有需要可自行摸索调整。
-
-1. 安装 Python。[Python官网](https://www.python.org) 下载安装 Python 的 `.exe` 包，运行按提示安装即可；
-2. 解压本工具 [AutoMdxBuilder_xx.zip](https://github.com/Litles/AutoMdxBuilder/releases) 作为工作文件夹；
-3. 安装 Python 模块包。`cmd` 在 AutoMdxBuilder  内执行 `pip install -r requirements.txt`即可（或手动挨个安装 `requirements.txt` 中所列包也行）；
+1. 安装 Python。（Windows）从 [Python官网](https://www.python.org) 下载安装 Python 的 `.exe` 包，运行按提示安装即可；
+2. 解压本工具 [AutoMdxBuilder_xx.zip](https://github.com/Litles/AutoMdxBuilder/releases) 作为工作文件夹（假设为 AutoMdxBuilder）；
+3. 安装 Python 模块包。在 AutoMdxBuilder  内执行 `pip install -r requirements.txt`即可（或手动挨个安装 `requirements.txt` 中所列包也行）；
 4. 准备词典制作的原材料。在 AutoMdxBuilder 文件夹内创建子文件夹 `raw`，将原材料按要求放置其内（**具体参见下面说明**）；
 5. 修改好 `settings.py` 配置文件（**具体参见下面说明**）；
 6. 运行 auto_mdx_builder.py （可直接双击）。词典成品产生在 `out` 子文件夹内，过程文件存放在 `_tmp` 子文件夹内以备用。
