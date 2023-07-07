@@ -18,6 +18,81 @@ class ImgDict:
         self.proc_flg, self.proc_flg_toc, self.proc_flg_syns = self._check_raw_files()
 
 
+    def make_source_file(self):
+        """ 制作预备 txt 源文本 """
+        if self.proc_flg:
+            print('\n材料检查通过, 开始制作词典……\n')
+            # 创建临时输出目录
+            if not os.path.exists(self.settings.dir_output_tmp):
+                os.makedirs(self.settings.dir_output_tmp)
+            # 清空目录下所有旧 txt,html 文件
+            for fname in os.listdir(self.settings.dir_output_tmp):
+                fpath = os.path.join(self.settings.dir_output_tmp, fname)
+                if os.path.isfile(fpath) and (fpath.endswith('.txt') or fpath.endswith('.html')):
+                    os.remove(fpath)
+            step = 0
+            # (一) 生成主体(图像)词条
+            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_main)
+            dir_imgs_out, p_total, n_len = self._make_entries_main(file_1)
+            step += 1
+            print(f'\n{step}.文件 "{self.settings.fname_entries_main}" 已生成；')
+            # (二) 生成总目词条
+            if self.proc_flg_toc:
+                file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_toc)
+                self._make_entries_toc(file_2)
+                step += 1
+                print(f'{step}.文件 "{self.settings.fname_entries_toc}" 已生成；')
+            # (三) 生成词目重定向
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_headword)
+            self._make_redirects_headword(n_len, file_3, self.proc_flg_toc)
+            step += 1
+            print(f'{step}.文件 "{self.settings.fname_redirects_headword}" 已生成；')
+            # (四) 生成近义词重定向
+            if self.proc_flg_syns:
+                file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)
+                self._make_redirects_syn(file_4)
+                step += 1
+                print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
+            # (五) 合并成最终 txt 文本
+            entry_total = 0 # 词条数
+            file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
+            # 用临时 xxx 文件去存储 (防止自身 txt 被读, 写两遍)
+            file_tmp = os.path.join(self.settings.dir_output_tmp, 'tmp.xxx')
+            with open(file_tmp, 'a+', encoding='utf-8') as fa:
+                # 遍历目录下的所有 txt 文件
+                for fname in os.listdir(self.settings.dir_output_tmp):
+                    fp = os.path.join(self.settings.dir_output_tmp, fname)
+                    if os.path.isfile(fp) and fp.endswith('.txt'):
+                        with open(fp, 'r', encoding='utf-8') as fr:
+                            lines = fr.readlines()
+                            for line in lines:
+                                if line == '</>\n':
+                                    entry_total += 1
+                                fa.write(line)
+            os.rename(file_tmp, file_final_txt)
+            print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
+            # (六) 生成 css 文件
+            file_css = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
+            with open(file_css, 'w', encoding='utf-8') as fw:
+                fw.write(self.settings.css_text)
+            print(f'\ncss 样式文件 "{self.settings.fname_css}" 生成完毕！')
+            # 5.生成 info.html
+            file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
+            file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
+            with open(file_info, 'a+', encoding='utf-8') as fa:
+                fa.write(f"<div>Name: {self.settings.name}</div>\n<div>Pages: {p_total}</div>\n")
+                fa.write(f"<div>Entries: {entry_total}</div>\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
+                if os.path.exists(file_info_raw):
+                    text = ''
+                    with open(file_info_raw, 'r', encoding='utf-8') as fr:
+                        text = fr.read()
+                    fa.write(text)
+            return self.proc_flg, file_final_txt, dir_imgs_out
+        else:
+            print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
+            return self.proc_flg, None, None
+
+
     def _check_raw_files(self):
         """ 检查原材料
         * 必要文本存在(文本编码均要是 utf-8 无 bom)
@@ -117,81 +192,6 @@ class ImgDict:
             if re.match(r'^\s*$', text):
                 blank_flg = True
         return blank_flg
-
-
-    def make_source_file(self):
-        """ 制作预备 txt 源文本 """
-        if self.proc_flg:
-            print('\n材料检查通过, 开始制作词典……\n')
-            # 创建临时输出目录
-            if not os.path.exists(self.settings.dir_output_tmp):
-                os.makedirs(self.settings.dir_output_tmp)
-            # 清空目录下所有旧 txt,html 文件
-            for fname in os.listdir(self.settings.dir_output_tmp):
-                fpath = os.path.join(self.settings.dir_output_tmp, fname)
-                if os.path.isfile(fpath) and (fpath.endswith('.txt') or fpath.endswith('.html')):
-                    os.remove(fpath)
-            step = 0
-            # (一) 生成主体(图像)词条
-            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_main)
-            dir_imgs_out, p_total, n_len = self._make_entries_main(file_1)
-            step += 1
-            print(f'\n{step}.文件 "{self.settings.fname_entries_main}" 已生成；')
-            # (二) 生成总目词条
-            if self.proc_flg_toc:
-                file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_toc)
-                self._make_entries_toc(file_2)
-                step += 1
-                print(f'{step}.文件 "{self.settings.fname_entries_toc}" 已生成；')
-            # (三) 生成词目重定向
-            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_headword)
-            self._make_redirects_headword(n_len, file_3, self.proc_flg_toc)
-            step += 1
-            print(f'{step}.文件 "{self.settings.fname_redirects_headword}" 已生成；')
-            # (四) 生成近义词重定向
-            if self.proc_flg_syns:
-                file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)
-                self._make_redirects_syn(file_4)
-                step += 1
-                print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
-            # (五) 合并成最终 txt 文本
-            entry_total = 0 # 词条数
-            file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
-            # 用临时 xxx 文件去存储 (防止自身 txt 被读, 写两遍)
-            file_tmp = os.path.join(self.settings.dir_output_tmp, 'tmp.xxx')
-            with open(file_tmp, 'a+', encoding='utf-8') as fa:
-                # 遍历目录下的所有 txt 文件
-                for fname in os.listdir(self.settings.dir_output_tmp):
-                    fp = os.path.join(self.settings.dir_output_tmp, fname)
-                    if os.path.isfile(fp) and fp.endswith('.txt'):
-                        with open(fp, 'r', encoding='utf-8') as fr:
-                            lines = fr.readlines()
-                            for line in lines:
-                                if line == '</>\n':
-                                    entry_total += 1
-                                fa.write(line)
-            os.rename(file_tmp, file_final_txt)
-            print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
-            # (六) 生成 css 文件
-            file_css = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
-            with open(file_css, 'w', encoding='utf-8') as fw:
-                fw.write(self.settings.css_text)
-            print(f'\ncss 样式文件 "{self.settings.fname_css}" 生成完毕！')
-            # 5.生成 info.html
-            file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-            file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
-            with open(file_info, 'a+', encoding='utf-8') as fa:
-                fa.write(f"<div>Name: {self.settings.name}</div>\n<div>Pages: {p_total}</div>\n")
-                fa.write(f"<div>Entries: {entry_total}</div>\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
-                if os.path.exists(file_info_raw):
-                    text = ''
-                    with open(file_info_raw, 'r', encoding='utf-8') as fr:
-                        text = fr.read()
-                    fa.write(text)
-            return self.proc_flg, file_final_txt, dir_imgs_out
-        else:
-            print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
-            return self.proc_flg, None, None
 
 
     def _make_entries_main(self, file_out):
