@@ -170,7 +170,6 @@ class ImgDict:
         elif n < max_index - min_index:
             print(f"ERROR: 图像数量不足(少于索引范围)")
             proc_flg = False
-
         # 5.检查 info.html
         if os.path.exists(file_dict_info) and self._detect_code(file_dict_info) != 'utf-8':
             print(f"ERROR: 文件 {file_dict_info} 不是 utf-8 编码格式")
@@ -285,7 +284,7 @@ class ImgDict:
             for item in self.settings.navi_items:
                 html += f'<span class="navi-item"><a href="entry://{self.settings.name_abbr}_{item["ref"]}">{item["a"]}</a></span>'
         else:
-            html += '　'
+            html += '&#8197;&#12288;&#8197;'
         html += f'</span>'
         return html
 
