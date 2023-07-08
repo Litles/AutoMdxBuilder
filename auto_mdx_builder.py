@@ -37,6 +37,7 @@ class AutoMdxBuilder:
                 self._build_mdx(file_final_txt, file_dict_info, dir_data)
             else:
                 print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
+            a = input('\n------------------\n回车退出程序：')
         elif sel == 2:
             self.imgdict = ImgDict()
             # 生成 txt 源文本
