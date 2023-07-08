@@ -6,14 +6,14 @@
 # @Version : 1.0
 
 import os, re
-import chardet
-from datetime import datetime
 from settings import Settings
+from funcs_lib import FuncsLib
 
 class ImgDict:
     """词典属性"""
     def __init__(self):
         self.settings = Settings()
+        self.funcs = FuncsLib()
         # 初始化, 检查原材料
         self.proc_flg, self.proc_flg_toc, self.proc_flg_syns = self._check_raw_files()
 
@@ -25,10 +25,10 @@ class ImgDict:
             # 创建临时输出目录
             if not os.path.exists(self.settings.dir_output_tmp):
                 os.makedirs(self.settings.dir_output_tmp)
-            # 清空目录下所有旧 txt,html 文件
+            # 清空目录下所有文件
             for fname in os.listdir(self.settings.dir_output_tmp):
                 fpath = os.path.join(self.settings.dir_output_tmp, fname)
-                if os.path.isfile(fpath) and (fpath.endswith('.txt') or fpath.endswith('.html')):
+                if os.path.isfile(fpath):
                     os.remove(fpath)
             step = 0
             # (一) 生成主体(图像)词条
@@ -53,44 +53,21 @@ class ImgDict:
                 self._make_redirects_syn(file_4)
                 step += 1
                 print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
-            # (五) 合并成最终 txt 文本
-            entry_total = 0 # 词条数
+            # (五) 合并成最终 txt 源文本
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
-            # 用临时 xxx 文件去存储 (防止自身 txt 被读, 写两遍)
-            file_tmp = os.path.join(self.settings.dir_output_tmp, 'tmp.xxx')
-            with open(file_tmp, 'a+', encoding='utf-8') as fa:
-                # 遍历目录下的所有 txt 文件
-                for fname in os.listdir(self.settings.dir_output_tmp):
-                    fp = os.path.join(self.settings.dir_output_tmp, fname)
-                    if os.path.isfile(fp) and fp.endswith('.txt'):
-                        with open(fp, 'r', encoding='utf-8') as fr:
-                            lines = fr.readlines()
-                            for line in lines:
-                                if line == '</>\n':
-                                    entry_total += 1
-                                fa.write(line)
-            os.rename(file_tmp, file_final_txt)
-            print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
+            entry_total = self.funcs.merge_and_count(self.settings.flist_mdx_parts, file_final_txt)
+            print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # (六) 生成 css 文件
             file_css = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
             with open(file_css, 'w', encoding='utf-8') as fw:
                 fw.write(self.settings.css_text)
             print(f'\ncss 样式文件 "{self.settings.fname_css}" 生成完毕！')
-            # 5.生成 info.html
-            file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-            file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
-            with open(file_info, 'a+', encoding='utf-8') as fa:
-                fa.write(f"<div>Name: {self.settings.name}</div>\n<div>Pages: {p_total}</div>\n")
-                fa.write(f"<div>Entries: {entry_total}</div>\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
-                if os.path.exists(file_info_raw):
-                    text = ''
-                    with open(file_info_raw, 'r', encoding='utf-8') as fr:
-                        text = fr.read()
-                    fa.write(text)
-            return self.proc_flg, file_final_txt, dir_imgs_out
+            # (七) 生成 info.html
+            file_dict_info = self.funcs.generate_info_html(entry_total, p_total)
+            return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
         else:
             print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
-            return self.proc_flg, None, None
+            return self.proc_flg, None, None, None
 
 
     def _check_raw_files(self):
@@ -110,14 +87,8 @@ class ImgDict:
         file_dict_info = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
         min_index = 0
         max_index = 0
-        # 1.检查索引文件
-        if not os.path.exists(file_index):
-            print(f"ERROR: 索引文件 {file_index} 不存在")
-            proc_flg = False
-        elif self._detect_code(file_index) != 'utf-8':
-            print(f"ERROR: 文本文件 {file_index} 不是 utf-8 编码格式")
-            proc_flg = False
-        else:
+        # 1.检查索引文件: 必须存在且合格
+        if self.funcs.text_file_check(file_index) == 2:
             # 读取词条索引
             with open(file_index, 'r', encoding='utf-8') as fr:
                 lines = fr.readlines()
@@ -126,15 +97,14 @@ class ImgDict:
                     if pat.search(line):
                         i = int(pat.search(line).group(2))
                         max_index =  max(max_index, i)
-        # 2.检查目录文件
-        if not os.path.exists(file_toc):
-            print(f"WARN: 书签目录文件 {file_toc} 不存在")
-            proc_flg_toc = False
-        elif self._detect_code(file_toc) != 'utf-8':
-            print(f"ERROR: 文本文件 {file_toc} 不是 utf-8 编码格式")
+        else:
             proc_flg = False
-        elif self._is_blank_file(file_toc):
+        # 2.检查目录文件: 若存在就要合格
+        toc_check_result = self.funcs.text_file_check(file_toc)
+        if toc_check_result == 0:
             proc_flg_toc = False
+        elif toc_check_result == 1:
+            proc_flg = False
         else:
             # 读取目录索引
             with open(file_toc, 'r', encoding='utf-8') as fr:
@@ -147,15 +117,14 @@ class ImgDict:
             if self.settings.body_start < abs(min_index) + 1:
                 print(f"ERROR: 正文起始页设置有误(小于最小索引)")
                 proc_flg = False
-        # 3.检查同义词文件
-        if not os.path.exists(file_syns):
-            print(f"WARN: 同义词文件 {file_syns} 不存在")
+        # 3.检查同义词文件: 若存在就要合格
+        syns_check_result = self.funcs.text_file_check(file_syns)
+        if syns_check_result == 0:
             proc_flg_syns = False
-        elif self._detect_code(file_syns) != 'utf-8':
-            print(f"ERROR: 文本文件 {file_syns} 不是 utf-8 编码格式")
+        elif syns_check_result == 1:
             proc_flg = False
-        elif self._is_blank_file(file_syns):
-            proc_flg_syns = False
+        else:
+            pass
         # 4.检查图像
         n = 0
         if os.path.exists(dir_imgs):
@@ -170,27 +139,10 @@ class ImgDict:
         elif n < max_index - min_index:
             print(f"ERROR: 图像数量不足(少于索引范围)")
             proc_flg = False
-        # 5.检查 info.html
-        if os.path.exists(file_dict_info) and self._detect_code(file_dict_info) != 'utf-8':
-            print(f"ERROR: 文件 {file_dict_info} 不是 utf-8 编码格式")
+        # 5.检查 info.html: 若存在就要合格
+        if self.funcs.text_file_check(file_dict_info) == 1:
             proc_flg = False
         return proc_flg, proc_flg_toc, proc_flg_syns
-
-
-    def _detect_code(self, txt_file):
-        with open(txt_file, 'rb') as frb:
-            data = frb.read()
-            dcts = chardet.detect(data)
-        return dcts["encoding"]
-
-
-    def _is_blank_file(self, txt_file):
-        blank_flg = False
-        with open(txt_file, 'r', encoding='utf-8') as fr:
-            text = fr.read()
-            if re.match(r'^\s*$', text):
-                blank_flg = True
-        return blank_flg
 
 
     def _make_entries_main(self, file_out):

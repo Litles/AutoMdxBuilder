@@ -5,14 +5,19 @@
 # @Link    : https://github.com/Litles
 # @Version : 1.0
 
+from os.path import join as pjoin
+
 class Settings:
-    """词典属性, css个性化设置"""
+    """ 词典设置 """
     def __init__(self):
-        # 词典属性
+        # 选单 [1,2]
         self.name = '汉语方言词汇（第二版）'
+        # 选单 [1,2]
         self.name_abbr = 'HYFYCH2'  # 书名首字母缩写
+        # 选单 [2]
         self.body_start = 62  # 正文起始页为第几张图(>=1)
 
+        # 选单 [2]
         # 导航栏链接(除TOC外)
         # 可选, 如果词典有目录就需要设置
         self.navi_items = [
@@ -33,6 +38,7 @@ class Settings:
         self.fname_toc = 'toc.txt'
         self.fname_syns = 'syns.txt'
         self.fname_dict_info = 'info.html'
+        self.dname_data = 'data'
 
         # 输出文件
         self.dir_output_tmp = '.\\_tmp'
@@ -40,7 +46,13 @@ class Settings:
         self.fname_entries_toc = 'entries_toc.txt'
         self.fname_redirects_syn = 'redirects_syn.txt'
         self.fname_redirects_headword = 'redirects_headword.txt'
-        self.fname_final_txt = f'{self.name}.txt'
+        self.flist_mdx_parts = [
+            pjoin(self.dir_output_tmp,self.fname_entries_main),
+            pjoin(self.dir_output_tmp,self.fname_entries_toc),
+            pjoin(self.dir_output_tmp,self.fname_redirects_syn),
+            pjoin(self.dir_output_tmp,self.fname_redirects_headword)
+        ]
+        self.fname_final_txt = 'mdx.txt'
         self.dir_output = '.\\out'
         self.fname_css = f'{self.name_abbr.lower()}.css'
 
