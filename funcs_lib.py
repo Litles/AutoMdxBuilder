@@ -58,6 +58,8 @@ class FuncsLib():
         return entry_total
 
     def generate_info_html(self, entry_total, p_total):
+        if not os.path.exists(self.settings.dir_output_tmp):
+            os.makedirs(self.settings.dir_output_tmp)
         file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
         file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
         if os.path.isfile(file_info):
