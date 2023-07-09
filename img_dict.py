@@ -6,6 +6,7 @@
 # @Version : 1.1
 
 import os, re
+from colorama import init, Fore, Back, Style
 from settings import Settings
 from func_lib import FuncLib
 
@@ -66,7 +67,7 @@ class ImgDict:
             file_dict_info = self.func.generate_info_html(entry_total, p_total)
             return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
         else:
-            print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
+            print(Fore.RED + f"\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None, None
 
 
@@ -115,7 +116,7 @@ class ImgDict:
                         i = int(pat.search(line).group(3))
                         min_index =  min(min_index, i)
             if self.settings.body_start < abs(min_index) + 1:
-                print(f"ERROR: 正文起始页设置有误(小于最小索引)")
+                print(Fore.RED + "ERROR: " + Fore.RESET + f"正文起始页设置有误(小于最小索引)")
                 proc_flg = False
         # 3.检查同义词文件: 若存在就要合格
         syns_check_result = self.func.text_file_check(file_syns)
@@ -131,13 +132,13 @@ class ImgDict:
             for fname in os.listdir(dir_imgs):
                 n += 1
         if n == 0:
-            print(f"ERROR: 图像文件夹 {dir_imgs} 不存在或为空")
+            print(Fore.RED + "ERROR: " + Fore.RESET + f"图像文件夹 {dir_imgs} 不存在或为空")
             proc_flg = False
         elif n < self.settings.body_start:
-            print(f"ERROR: 图像数量不足(少于起始页码)")
+            print(Fore.RED + "ERROR: " + Fore.RESET + f"图像数量不足(少于起始页码)")
             proc_flg = False
         elif n < max_index - min_index:
-            print(f"ERROR: 图像数量不足(少于索引范围)")
+            print(Fore.RED + "ERROR: " + Fore.RESET + f"图像数量不足(少于索引范围)")
             proc_flg = False
         # 5.检查 info.html: 若存在就要合格
         if self.func.text_file_check(file_dict_info) == 1:

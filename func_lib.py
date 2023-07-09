@@ -8,6 +8,7 @@
 import os, re
 from datetime import datetime
 import chardet
+from colorama import init, Fore, Back, Style
 from settings import Settings
 
 class FuncLib():
@@ -18,9 +19,9 @@ class FuncLib():
     def text_file_check(self, text_file):
         check_result = 0
         if not os.path.exists(text_file):
-            print(f"INFO: 文件 {text_file} 不存在")
+            print(Fore.YELLOW + "INFO: " + Fore.RESET + f"文件 {text_file} 不存在")
         elif self._is_blank_file(text_file):
-            print(f"ERROR: 文件 {text_file} 内容为空")
+            print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {text_file} 内容为空")
             check_result = 1
         else:
             check_result = 2
@@ -76,7 +77,7 @@ class FuncLib():
                     text = fr.read()
                 fa.write(text)
             else:
-                print(f"INFO: 未找到 {file_info_raw}, 将生成默认词典描述")
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + f"未找到 {file_info_raw}, 将生成默认词典描述")
         return file_info
 
     def _detect_code(self, text_file):
