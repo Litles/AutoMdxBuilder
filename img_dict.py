@@ -7,13 +7,13 @@
 
 import os, re
 from settings import Settings
-from funcs_lib import FuncsLib
+from func_lib import FuncLib
 
 class ImgDict:
     """词典属性"""
     def __init__(self):
         self.settings = Settings()
-        self.funcs = FuncsLib()
+        self.func = FuncLib()
         # 初始化, 检查原材料
         self.proc_flg, self.proc_flg_toc, self.proc_flg_syns = self._check_raw_files()
 
@@ -55,7 +55,7 @@ class ImgDict:
                 print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
             # (五) 合并成最终 txt 源文本
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
-            entry_total = self.funcs.merge_and_count(self.settings.flist_mdx_parts, file_final_txt)
+            entry_total = self.func.merge_and_count(self.settings.flist_mdx_parts, file_final_txt)
             print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # (六) 生成 css 文件
             file_css = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
@@ -63,7 +63,7 @@ class ImgDict:
                 fw.write(self.settings.css_text)
             print(f'\ncss 样式文件 "{self.settings.fname_css}" 生成完毕！')
             # (七) 生成 info.html
-            file_dict_info = self.funcs.generate_info_html(entry_total, p_total)
+            file_dict_info = self.func.generate_info_html(entry_total, p_total)
             return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
         else:
             print(f"\n材料检查不通过, 请确保材料准备无误再执行程序")
@@ -88,7 +88,7 @@ class ImgDict:
         min_index = 0
         max_index = 0
         # 1.检查索引文件: 必须存在且合格
-        if self.funcs.text_file_check(file_index) == 2:
+        if self.func.text_file_check(file_index) == 2:
             # 读取词条索引
             with open(file_index, 'r', encoding='utf-8') as fr:
                 lines = fr.readlines()
@@ -100,7 +100,7 @@ class ImgDict:
         else:
             proc_flg = False
         # 2.检查目录文件: 若存在就要合格
-        toc_check_result = self.funcs.text_file_check(file_toc)
+        toc_check_result = self.func.text_file_check(file_toc)
         if toc_check_result == 0:
             proc_flg_toc = False
         elif toc_check_result == 1:
@@ -118,7 +118,7 @@ class ImgDict:
                 print(f"ERROR: 正文起始页设置有误(小于最小索引)")
                 proc_flg = False
         # 3.检查同义词文件: 若存在就要合格
-        syns_check_result = self.funcs.text_file_check(file_syns)
+        syns_check_result = self.func.text_file_check(file_syns)
         if syns_check_result == 0:
             proc_flg_syns = False
         elif syns_check_result == 1:
@@ -140,7 +140,7 @@ class ImgDict:
             print(f"ERROR: 图像数量不足(少于索引范围)")
             proc_flg = False
         # 5.检查 info.html: 若存在就要合格
-        if self.funcs.text_file_check(file_dict_info) == 1:
+        if self.func.text_file_check(file_dict_info) == 1:
             proc_flg = False
         return proc_flg, proc_flg_toc, proc_flg_syns
 

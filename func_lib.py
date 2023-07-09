@@ -10,7 +10,7 @@ from datetime import datetime
 import chardet
 from settings import Settings
 
-class FuncsLib():
+class FuncLib():
     """ functions for usage """
     def __init__(self):
         self.settings = Settings()

@@ -8,21 +8,21 @@
 import os
 from settings import Settings
 from img_dict import ImgDict
-from funcs_lib import FuncsLib
+from func_lib import FuncLib
 
 class AutoMdxBuilder:
     """图像词典制作程序"""
     def __init__(self):
         self.settings = Settings()
-        self.funcs = FuncsLib()
+        self.func = FuncLib()
 
     def auto_processing(self, sel):
         """ 根据选择自动处理 """
         if sel == 1:
             file_final_txt = os.path.join(self.settings.dir_input, self.settings.fname_final_txt)
-            if self.funcs.text_file_check(file_final_txt) == 2:
+            if self.func.text_file_check(file_final_txt) == 2:
                 # 读取词条数
-                entry_total = self.funcs.merge_and_count([file_final_txt], file_final_txt)
+                entry_total = self.func.merge_and_count([file_final_txt], file_final_txt)
                 # 检查数据文件夹
                 dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
                 if not os.path.exists(dir_data):
@@ -32,7 +32,7 @@ class AutoMdxBuilder:
                     print(f"WARN: 文件夹 {dir_data} 为空, 已默认不打包 mdd")
                     dir_data = None
                 # 生成 info.html
-                file_dict_info = self.funcs.generate_info_html(entry_total, 0)
+                file_dict_info = self.func.generate_info_html(entry_total, 0)
                 # 打包
                 self._build_mdx(file_final_txt, file_dict_info, dir_data)
             else:
