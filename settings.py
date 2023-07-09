@@ -10,14 +10,14 @@ from os.path import join as pjoin
 class Settings:
     """ 词典设置 """
     def __init__(self):
-        # 选单 [1,2]
+        # 选单 [3]
         self.name = '汉语方言词汇（第二版）'
-        # 选单 [1,2]
+        # 选单 [3]
         self.name_abbr = 'HYFYCH2'  # 书名首字母缩写
-        # 选单 [2]
+        # 选单 [3]
         self.body_start = 62  # 正文起始页为第几张图(>=1)
 
-        # 选单 [2]
+        # 选单 [3]
         # 导航栏链接(除TOC外)
         # 可选, 如果词典有目录就需要设置
         self.navi_items = [
@@ -38,7 +38,6 @@ class Settings:
         self.fname_toc = 'toc.txt'
         self.fname_syns = 'syns.txt'
         self.fname_dict_info = 'info.html'
-        self.dname_data = 'data'
 
         # 输出文件
         self.dir_output_tmp = '.\\_tmp'
@@ -52,9 +51,9 @@ class Settings:
             pjoin(self.dir_output_tmp,self.fname_redirects_syn),
             pjoin(self.dir_output_tmp,self.fname_redirects_headword)
         ]
-        self.fname_final_txt = 'mdx.txt'
+        self.fname_final_txt = f"{self.name}.txt"
         self.dir_output = '.\\out'
-        self.fname_css = f'{self.name_abbr.lower()}.css'
+        self.fname_css = f"{self.name_abbr.lower()}.css"
 
         # 预设 css 样式
         self.css_text = """/*预定义*/
