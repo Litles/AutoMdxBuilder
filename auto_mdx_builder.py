@@ -5,7 +5,7 @@
 # @Link    : https://github.com/Litles
 # @Version : 1.1
 
-import os
+import os, re
 from colorama import init, Fore, Back, Style
 from settings import Settings
 from img_dict import ImgDict
@@ -44,8 +44,9 @@ class AutoMdxBuilder:
             else:
                 print(Fore.RED + f"\n材料检查不通过, 请确保材料准备无误再执行程序")
         elif sel == 3:
-            mdir = input(f"请输入要打包的资料文件夹路径: ").strip('"')
-            self._build_mdd_only(mdir)
+            dir_data = input(f"请输入要打包的资料文件夹路径: ").strip('"')
+            dir_data = dir_data.rstrip('\\')
+            self._build_mdd_only(dir_data)
         elif sel == 4:
             self.imgdict = ImgDict()
             # 生成 txt 源文本
@@ -66,7 +67,7 @@ class AutoMdxBuilder:
                         fw.write(text)
         else:
             pass
-        input('\n------------------\n回车退出程序：')
+        a = input('\n------------------\n回车退出程序：')
 
 
     def _export_mdx(self, mfile):
@@ -81,9 +82,25 @@ class AutoMdxBuilder:
                     os.rename(fp, fp_new)
             print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.BLUE + out_dir)
         elif os.path.isfile(mfile) and mfile.endswith('.mdd'):
+            cur_dir, mname = os.path.split(mfile)
             out_dir = os.path.join(os.path.splitext(mfile)[0], 'data')
-            os.system(f"mdict -x {mfile} -d {out_dir}")
-            print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.BLUE + out_dir)
+            # 检查是否存在 mdd 分包
+            multi_mdd_flg = False
+            mdd_names = [mname]
+            for fname in os.listdir(cur_dir):
+                if re.search(r'\.\d+\.mdd$', fname, flags=re.I):
+                    multi_mdd_flg = True
+                    mdd_names.append(fname)
+            # 按检查结果区分处理
+            if multi_mdd_flg and input('检查到目录下存在 mdd 分包, 是否全部解包 (Y/N): ') in ('Y','y'):
+                mdd_names = list(set(mdd_names))
+                mdd_names.sort()
+                for mdd_name in mdd_names:
+                    print(f"开始解压 '{mdd_name}' :\n")
+                    os.system(f"mdict -x {os.path.join(cur_dir, mdd_name)} -d {out_dir}")
+            else:
+                os.system(f"mdict -x {mfile} -d {out_dir}")
+            print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.RESET + out_dir)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
 
@@ -93,7 +110,7 @@ class AutoMdxBuilder:
         done_flg = True
         # 打包 mdx
         ftitle = os.path.join(dir_output, os.path.splitext(os.path.split(file_final_txt)[1])[0])
-        print('\n------------------\n开始打包:')
+        print('\n------------------\n开始打包……\n')
         if os.path.exists(file_final_txt) and os.path.exists(file_dict_info):
             os.system(f"mdict --description {file_dict_info} --encoding utf-8 -a {file_final_txt} {ftitle}.mdx")
         else:
@@ -118,9 +135,86 @@ class AutoMdxBuilder:
     def _build_mdd_only(self, dir_data):
         done_flg = True
         if os.path.exists(dir_data):
-            print('\n------------------\n开始打包:')
-            ftitle = dir_data.rstrip('\\')
-            os.system(f"mdict -a {dir_data} {ftitle}.mdd")
+            print('\n------------------\n开始打包……\n')
+            ftitle = dir_data
+            # 检查子文件夹的数量
+            sub_dirs = []
+            for item in os.listdir(dir_data):
+                if os.path.isdir(os.path.join(dir_data, item)):
+                    sub_dirs.append(os.path.join(dir_data, item))
+            # 如果有2个子文件夹以上, 再计算子文件夹大小, 如果大小超过 1.5G, 将分包
+            split_flg = False
+            size_sum = 0
+            if len(sub_dirs) > 1:
+                # 判断子文件夹大小
+                for sub_dir in sub_dirs:
+                    for fname in os.listdir(sub_dir):
+                        if os.path.isfile(os.path.join(sub_dir,fname)):
+                            size_sum += os.path.getsize(os.path.join(sub_dir,fname))
+                        if size_sum > 1536000000:
+                            split_flg = True
+                            break
+            # 按检查结果开始处理
+            if split_flg:
+                size_sum = 0
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + "资料文件夹超过 1.5G, 将自动分包")
+                # 创建临时文件夹
+                tmp_dir = os.path.join(os.path.split(dir_data)[0], '_packing')
+                if not os.path.exists(tmp_dir):
+                    os.makedirs(tmp_dir)
+                pack_list = []
+                pack = []
+                n = 0
+                # 对每个子文件夹作判断
+                for i in range(len(sub_dirs)):
+                    for fname in os.listdir(sub_dirs[i]):
+                        if os.path.isfile(os.path.join(sub_dirs[i],fname)):
+                            size_sum += os.path.getsize(os.path.join(sub_dirs[i],fname))
+                        if size_sum > 1024000000:
+                            size_sum = 0
+                            pack.append(sub_dirs[i])
+                            pack_list.append(pack)
+                            pack = []
+                            break
+                    pack.append(sub_dirs[i])
+                    n = i
+                # 1.打包子文件夹
+                mdd_rk = 0
+                for sds in pack_list:
+                    for sd in sds:
+                        # 移动到临时文件夹中
+                        os.rename(sd, os.path.join(tmp_dir, os.path.split(sd)[1]))
+                    # 移完之后打包
+                    if mdd_rk == 0:
+                        os.system(f"mdict -a {tmp_dir} {ftitle}.mdd")
+                    else:
+                        os.system(f"mdict -a {tmp_dir} {ftitle}.{str(mdd_rk)}.mdd")
+                    # 打包完再移回去
+                    for fname in os.listdir(tmp_dir):
+                        os.rename(os.path.join(tmp_dir, fname), os.path.join(dir_data, fname))
+                    mdd_rk += 1
+                # 1.打包剩余部分
+                # 移动文件夹部分(如果有)
+                if n == len(sub_dirs) - 1:
+                    for sd in pack:
+                        os.rename(sd, os.path.join(tmp_dir, os.path.split(sd)[1]))
+                # 移动文件部分(如果有)
+                for item in os.listdir(dir_data):
+                    if not os.path.isdir(os.path.join(dir_data, item)):
+                        os.rename(os.path.join(dir_data, item), os.path.join(tmp_dir, item))
+                # 打包
+                if len(os.listdir(tmp_dir)) == 0:
+                    pass
+                else:
+                    os.system(f"mdict -a {tmp_dir} {ftitle}.{str(mdd_rk)}.mdd")
+                    # 移回去
+                    for fname in os.listdir(tmp_dir):
+                        os.rename(os.path.join(tmp_dir, fname), os.path.join(dir_data, fname))
+                # 删除临时文件夹
+                if os.path.exists(tmp_dir):
+                    os.rmdir(tmp_dir)
+            else:
+                os.system(f"mdict -a {dir_data} {ftitle}.mdd")
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件夹 {dir_data} 不存在")
             done_flg = False
