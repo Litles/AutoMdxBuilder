@@ -64,7 +64,8 @@ class ImgDict:
                 fw.write(self.settings.css_text)
             print(f'\ncss 样式文件 "{self.settings.fname_css}" 生成完毕！')
             # (七) 生成 info.html
-            file_dict_info = self.func.generate_info_html(entry_total, p_total)
+            file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
+            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, p_total)
             return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
         else:
             print(Fore.RED + f"\n材料检查不通过, 请确保材料准备无误再执行程序")

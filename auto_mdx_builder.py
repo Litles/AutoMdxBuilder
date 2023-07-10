@@ -29,7 +29,7 @@ class AutoMdxBuilder:
                 # 读取词条数
                 entry_total = self.func.merge_and_count([file_final_txt], file_final_txt)
                 # 检查数据文件夹
-                dir_curr = os.path.split(file_final_txt)[0]
+                dir_curr, fname_txt = os.path.split(file_final_txt)
                 dir_data = os.path.join(dir_curr, 'data')
                 if not os.path.exists(dir_data):
                     print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"文件夹 {dir_data} 不存在, 已默认不打包 mdd")
@@ -38,15 +38,28 @@ class AutoMdxBuilder:
                     print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"文件夹 {dir_data} 为空, 已默认不打包 mdd")
                     dir_data = None
                 # 生成 info.html
-                file_dict_info = self.func.generate_info_html(entry_total, 0)
+                file_info_raw = None
+                for fname in os.listdir(dir_curr):
+                    if fname == 'info.html':
+                        file_info_raw = os.path.join(dir_curr, fname)
+                    elif fname.endswith('.html') and fname.startswith(os.path.splitext(fname_txt)[0]):
+                        file_info_raw = os.path.join(dir_curr, fname)
+                        break
+                file_dict_info = self.func.generate_info_html(os.path.splitext(fname_txt)[0], file_info_raw, entry_total, 0)
                 # 打包
-                self._build_mdx(file_final_txt, file_dict_info, dir_data, dir_curr)
+                print('\n------------------\n开始打包……\n')
+                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_data, dir_curr)
+                if done_flg:
+                    print(Fore.GREEN + "\n打包完毕。")
             else:
                 print(Fore.RED + f"\n材料检查不通过, 请确保材料准备无误再执行程序")
         elif sel == 3:
             dir_data = input(f"请输入要打包的资料文件夹路径: ").strip('"')
             dir_data = dir_data.rstrip('\\')
-            self._build_mdd_only(dir_data)
+            print('\n------------------\n开始打包……\n')
+            done_flg = self._build_mdd(dir_data, None)
+            if done_flg:
+                print(Fore.GREEN + "\n打包完毕。")
         elif sel == 4:
             self.imgdict = ImgDict()
             # 生成 txt 源文本
@@ -55,7 +68,10 @@ class AutoMdxBuilder:
                 # 创建输出文件夹, 开始打包
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
-                self._build_mdx(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                print('\n------------------\n开始打包……\n')
+                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                if done_flg:
+                    print("\n打包完毕。"+ Fore.GREEN + "\n\n恭喜, 词典已生成！")
                 # 如果有 css 文件就拷贝过来
                 file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
@@ -80,7 +96,7 @@ class AutoMdxBuilder:
                 if os.path.isfile(fp):
                     fp_new = fp.replace('.mdx', '')
                     os.rename(fp, fp_new)
-            print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.BLUE + out_dir)
+            print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.RESET + out_dir)
         elif os.path.isfile(mfile) and mfile.endswith('.mdd'):
             cur_dir, mname = os.path.split(mfile)
             out_dir = os.path.join(os.path.splitext(mfile)[0], 'data')
@@ -105,38 +121,44 @@ class AutoMdxBuilder:
             print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
 
 
-    def _build_mdx(self, file_final_txt, file_dict_info, dir_data, dir_output):
+    def _build_mdict(self, file_final_txt, file_dict_info, dir_data, dir_output):
         """ 打包 mdx/mdd (取代 MdxBuilder.exe) """
-        done_flg = True
+        mdx_flg = True
+        mdd_flg = True
         # 打包 mdx
+        print('正在生成 mdx 文件……\n')
         ftitle = os.path.join(dir_output, os.path.splitext(os.path.split(file_final_txt)[1])[0])
-        print('\n------------------\n开始打包……\n')
         if os.path.exists(file_final_txt) and os.path.exists(file_dict_info):
             os.system(f"mdict --description {file_dict_info} --encoding utf-8 -a {file_final_txt} {ftitle}.mdx")
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {file_final_txt} 或 {file_dict_info} 不存在")
-            done_flg = False
+            mdx_flg = False
         # 打包 mdd
-        if dir_data:
-            pack_mdd_flg = True
+        if dir_data is not None:
+            mdd_flg = self._build_mdd(dir_data, ftitle)
+        if mdx_flg and mdd_flg:
+            return True
+        else:
+            return False
+
+
+    def _build_mdd(self, dir_data, ftitle):
+        """ 仅打包 mdd (取代 MdxBuilder.exe) """
+        pack_flg = True
+        if ftitle is None:
+            ftitle = dir_data
+        # 判断是否打包
+        if os.path.exists(dir_data) and len(os.listdir(dir_data))>0:
             if os.path.exists(ftitle+'.mdd'):
                 a = input(f'文件 "{ftitle}.mdd" 已存在, 是否重新打包 mdd (Y/N): ')
                 if a not in ('Y', 'y'):
-                    pack_mdd_flg = False
-                elif a in ('Y', 'y') and (not os.path.exists(dir_data) or len(os.listdir(dir_data))==0):
-                    print(Fore.RED + "ERROR: " + Fore.RESET + f"文件夹 {dir_data} 不存在或为空")
-                    pack_mdd_flg = False
-                    done_flg = False
-            if pack_mdd_flg:
-                os.system(f"mdict -a {dir_data} {ftitle}.mdd")
-        if done_flg:
-            print("\n打包完毕。"+ Fore.GREEN + "\n\n恭喜, 词典已生成！")
-
-    def _build_mdd_only(self, dir_data):
-        done_flg = True
-        if os.path.exists(dir_data):
-            print('\n------------------\n开始打包……\n')
-            ftitle = dir_data
+                    pack_flg = False
+        else:
+            print(Fore.RED + "ERROR: " + Fore.RESET + f"文件夹 {dir_data} 不存在或为空")
+            pack_flg = False
+        # 开始打包
+        if pack_flg:
+            print('正在生成 mdd 文件……\n')
             # 检查子文件夹的数量
             sub_dirs = []
             for item in os.listdir(dir_data):
@@ -215,11 +237,8 @@ class AutoMdxBuilder:
                     os.rmdir(tmp_dir)
             else:
                 os.system(f"mdict -a {dir_data} {ftitle}.mdd")
-        else:
-            print(Fore.RED + "ERROR: " + Fore.RESET + f"文件夹 {dir_data} 不存在")
-            done_flg = False
-        if done_flg:
-            print('\n打包完毕。')
+        return pack_flg
+
 
 if __name__ == '__main__':
     init(autoreset=True)
@@ -227,8 +246,8 @@ if __name__ == '__main__':
     print(Fore.GREEN + "欢迎使用 AutoMdxBuilder, 下面是功能选单:")
     print("\n(一) 打包/解包")
     print(Fore.CYAN + "  1" + Fore.RESET + ".解包 mdx/mdd 文件")
-    print(Fore.CYAN + "  2" + Fore.RESET + ".打包成 mdx/mdd 文件")
-    print(Fore.CYAN + "  3" + Fore.RESET + ".仅打包成 mdd 文件")
+    print(Fore.CYAN + "  2" + Fore.RESET + ".打包成 mdx 文件")
+    print(Fore.CYAN + "  3" + Fore.RESET + ".打包成 mdd 文件")
     print("\n(二) 制作词典 (需于 raw 文件夹放置好原材料)")
     print(Fore.CYAN + "  4" + Fore.RESET + ".制作图像词典 (模板A)")
     print("\n(三) 其他")

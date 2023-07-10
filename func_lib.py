@@ -58,26 +58,27 @@ class FuncLib():
             os.rename(file_tmp, file_final)
         return entry_total
 
-    def generate_info_html(self, entry_total, p_total):
+    def generate_info_html(self, dict_name, file_info_raw, entry_total, p_total):
+        # 创建好临时文件夹
         if not os.path.exists(self.settings.dir_output_tmp):
             os.makedirs(self.settings.dir_output_tmp)
-        file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
         file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
         if os.path.isfile(file_info):
             os.remove(file_info)
+        # 生成临时 info.html
         with open(file_info, 'a+', encoding='utf-8') as fa:
-            if p_total == 0:
-                fa.write(f"<div>Name: {self.settings.name}</div>\n")
-            else:
-                fa.write(f"<div>Name: {self.settings.name}</div>\n<div>Pages: {p_total}</div>\n")
-            fa.write(f"<div>Entries: {entry_total}</div>\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
-            if os.path.exists(file_info_raw):
-                text = ''
+            if file_info_raw and os.path.exists(file_info_raw):
                 with open(file_info_raw, 'r', encoding='utf-8') as fr:
-                    text = fr.read()
-                fa.write(text)
+                    fa.write(fr.read())
+                fa.write(f"\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
             else:
-                print(Fore.YELLOW + "INFO: " + Fore.RESET + f"未找到 {file_info_raw}, 将生成默认词典描述")
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + f"未找到描述文件, 将生成默认词典描述")
+                fa.write(f"<div>Name: {dict_name}</div>\n")
+                # 写词条数, 页码数
+                if p_total != 0:
+                    fa.write(f"<div>Pages: {p_total}</div>\n")
+                fa.write(f"<div>Entries: {entry_total}</div>\n")
+                fa.write(f"<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
         return file_info
 
     def _detect_code(self, text_file):
