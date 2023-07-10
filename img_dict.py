@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Date    : 2023-07-08 23:33:47
+# @Date    : 2023-07-10 16:01:16
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.1
+# @Version : 1.2
 
 import os, re
 from colorama import init, Fore, Back, Style

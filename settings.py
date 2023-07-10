@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Date    : 2023-07-08 23:33:32
+# @Date    : 2023-07-10 16:01:09
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.1
+# @Version : 1.2
 
 from os.path import join as pjoin
 
