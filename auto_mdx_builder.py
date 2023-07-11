@@ -8,7 +8,7 @@
 import os, re
 from colorama import init, Fore, Back, Style
 from settings import Settings
-from img_dict import ImgDict
+from img_dict_atmpl import ImgDictAtmpl
 from func_lib import FuncLib
 
 
@@ -25,7 +25,7 @@ class AutoMdxBuilder:
             self._export_mdx(mfile)
         elif sel == 2:
             file_final_txt = input(f"请输入要打包的 txt 文件路径: ").strip('"')
-            if os.path.isfile(file_final_txt) and self.func.text_file_check(file_final_txt) == 2:
+            if self.func.text_file_check(file_final_txt) == 2:
                 # 读取词条数
                 entry_total = self.func.merge_and_count([file_final_txt], file_final_txt)
                 # 检查数据文件夹
@@ -61,9 +61,9 @@ class AutoMdxBuilder:
             if done_flg:
                 print(Fore.GREEN + "\n打包完毕。")
         elif sel == 4:
-            self.imgdict = ImgDict()
+            self.imgdicta = ImgDictAtmpl()
             # 生成 txt 源文本
-            proc_flg, file_final_txt, dir_imgs_out, file_dict_info = self.imgdict.make_source_file()
+            proc_flg, file_final_txt, dir_imgs_out, file_dict_info = self.imgdicta.make_source_file()
             if proc_flg:
                 # 创建输出文件夹, 开始打包
                 if not os.path.exists(self.settings.dir_output):
@@ -81,6 +81,13 @@ class AutoMdxBuilder:
                         text = fr.read()
                     with open(file_css, 'w', encoding='utf-8') as fw:
                         fw.write(text)
+        elif sel == 5:
+            pass
+        elif sel == 6:
+            file_raw_toc = input(f"请输入要处理成 toc.txt 的文件路径: ").strip('"')
+            done_flg = self._format_toc(file_raw_toc)
+            if done_flg:
+                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
         else:
             pass
         a = input('\n------------------\n回车退出程序：')
@@ -240,6 +247,39 @@ class AutoMdxBuilder:
         return pack_flg
 
 
+    def _format_toc(self, file_raw_toc):
+        """ 处理成标准 toc.txt 文件 """
+        done_flg = True
+        file_toc = os.path.join(os.path.split(file_raw_toc)[0], 'toc_all.txt')
+        if self.func.text_file_check(file_raw_toc) == 2:
+            pat1 = re.compile(r'^【L(\d+)】([^\t]+\t[\-\d]+[\r\n]*)$')
+            pat2 = re.compile(r'^[^【][^\t]*\t[\-\d]+[\r\n]*$')
+            with open(file_toc, 'w', encoding='utf-8') as fw:
+                with open(file_raw_toc, 'r', encoding='utf-8') as fr:
+                    lines = fr.readlines()
+                    level = 1
+                    i = 0
+                    for line in lines:
+                        i += 1
+                        if pat1.match(line):
+                            mth = pat1.match(line)
+                            level = int(mth.group(1))
+                            fw.write('\t'*(level-1) + mth.group(2))
+                        elif pat2.match(line):
+                            fw.write('\t'*level + line)
+                        else:
+                            print(f"第 {i} 行未匹配, 请检查")
+                            done_flg = False
+        else:
+            done_flg = False
+        return done_flg
+
+    def _combine_to_toc(self):
+        """ 将 toc.txt 和 index.txt 合并成 toc_all.txt 文件
+        合并完自己还要再检查一下
+        """
+        pass
+
 if __name__ == '__main__':
     init(autoreset=True)
     # 功能选单
@@ -250,11 +290,14 @@ if __name__ == '__main__':
     print(Fore.CYAN + "  3" + Fore.RESET + ".打包成 mdd 文件")
     print("\n(二) 制作词典 (需于 raw 文件夹放置好原材料)")
     print(Fore.CYAN + "  4" + Fore.RESET + ".制作图像词典 (模板A)")
+    print(Fore.CYAN + "  5" + Fore.RESET + ".制作图像词典 (模板B)")
     print("\n(三) 其他")
+    print(Fore.CYAN + "  6" + Fore.RESET + ".处理成 toc_all.txt 文件")
+    print(Fore.CYAN + "  [开发中]7" + Fore.RESET + ".(将 toc.txt 和 index.txt) 合并成 toc_all.txt 文件")
     print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
     sel = int(input('\n请输入数字: '))
     # 执行选择
-    if sel in range(1,5):
+    if sel in range(1,8):
         print('\n------------------')
         amb = AutoMdxBuilder()
         amb.auto_processing(sel)

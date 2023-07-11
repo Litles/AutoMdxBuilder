@@ -10,6 +10,7 @@ from colorama import init, Fore, Back, Style
 from settings import Settings
 from func_lib import FuncLib
 
+
 class ImgDict:
     """词典属性"""
     def __init__(self):
@@ -297,7 +298,7 @@ class ImgDict:
                     }
                     pairs.append(pair)
                 else:
-                    print(f'第{i}行未匹配, 已忽略')
+                    print(f"第 {i} 行未匹配, 已忽略")
                 i += 1
         return pairs
 
@@ -321,7 +322,7 @@ class ImgDict:
                     }
                     pairs.append(pair)
                 else:
-                    print(f'第{i}行未匹配, 已忽略')
+                    print(f"第 {i} 行未匹配, 已忽略")
                 i += 1
         # 1b.读取目录索引
         if proc_flg_toc:
@@ -360,7 +361,7 @@ class ImgDict:
                     }
                     syns.append(syn)
                 else:
-                    print(f'第{i}行未匹配, 已忽略')
+                    print(f"第 {i} 行未匹配, 已忽略")
                 i += 1
         # 2.生成重定向
         with open(file_out, 'a+', encoding='utf-8') as fa:

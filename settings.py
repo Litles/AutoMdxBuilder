@@ -7,6 +7,7 @@
 
 from os.path import join as pjoin
 
+
 class Settings:
     """ 词典设置 """
     def __init__(self):

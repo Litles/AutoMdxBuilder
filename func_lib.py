@@ -11,6 +11,7 @@ import chardet
 from colorama import init, Fore, Back, Style
 from settings import Settings
 
+
 class FuncLib():
     """ functions for usage """
     def __init__(self):
@@ -18,7 +19,7 @@ class FuncLib():
 
     def text_file_check(self, text_file):
         check_result = 0
-        if not os.path.exists(text_file):
+        if not os.path.exists(text_file) or not os.path.isfile(text_file):
             print(Fore.YELLOW + "INFO: " + Fore.RESET + f"文件 {text_file} 不存在")
         elif self._is_blank_file(text_file):
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {text_file} 内容为空")
