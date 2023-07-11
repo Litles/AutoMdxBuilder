@@ -11,8 +11,8 @@ from settings import Settings
 from func_lib import FuncLib
 
 
-class ImgDict:
-    """词典属性"""
+class ImgDictAtmpl:
+    """ 图像词典（模板A） """
     def __init__(self):
         self.settings = Settings()
         self.func = FuncLib()
