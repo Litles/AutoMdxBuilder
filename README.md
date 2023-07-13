@@ -31,7 +31,7 @@
 
 ## 使用方法
 
-### 使用步骤
+### 操作步骤
 
 #### （一）准备工具
 1. 安装 Python。（Windows）从 [Python官网](https://www.python.org) 下载安装 Python 的 `.exe` 包，运行按提示安装即可；
@@ -99,6 +99,14 @@
 
 如果是制作文本词典 (模板C)，用到的文件也叫 `index.txt`，只不过其中的 **页码** 换成了 **词条正文**，格式为 `词目<TAB>词条正文` 。
 
+### 目录文件 `toc.txt`
+
+格式`[<TAB>*]词目<TAB>页码`，格式大概像这样（行首 TAB 缩进表层级）：
+
+![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/toc.png)
+
+格式同程序 `FreePic2Pdf.exe` 的书签文件`FreePic2Pdf_bkmk.txt`，因此也可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出。
+
 ### 全索引文件 `index_all.txt`
 
 是 `index.txt` 的拓展，格式同样是 `词目<TAB>页码` ，只不过 `index_all.txt` 是把 `toc.txt` 也并入进来，并且是严格有序的。
@@ -110,14 +118,6 @@
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/index_all.png)
 
 如果是制作文本词典 (模板D)，用到的文件也叫 `index_all.txt`，只不过其中的 **页码** 换成了 **词条正文**，格式为 `词目<TAB>词条正文` 。
-
-### 目录文件 `toc.txt`
-
-格式`[<TAB>*]词目<TAB>页码`，格式大概像这样（行首 TAB 缩进表层级）：
-
-![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/toc.png)
-
-格式同程序 `FreePic2Pdf.exe` 的书签文件`FreePic2Pdf_bkmk.txt`，因此也可以直接用 `FreePic2Pdf.exe` 程序从 pdf 文件中导出。
 
 ### 同义词文件 `syns.txt`
 
