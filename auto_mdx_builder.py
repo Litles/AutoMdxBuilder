@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Date    : 2023-07-10 16:01:20
+# @Date    : 2023-07-13 19:49:50
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.2
+# @Version : 1.3
 
-import os, re
+import os
+import re
 from colorama import init, Fore, Back, Style
 from settings import Settings
 from img_dict_atmpl import ImgDictAtmpl
+from img_dict_btmpl import ImgDictBtmpl
+from text_dict_ctmpl import TextDictCtmpl
+from text_dict_dtmpl import TextDictDtmpl
 from func_lib import FuncLib
 
 
@@ -21,10 +25,10 @@ class AutoMdxBuilder:
     def auto_processing(self, sel):
         """ 根据选择自动处理 """
         if sel == 1:
-            mfile = input(f"请输入要解包的 mdx/mdd 文件路径: ").strip('"')
+            mfile = input("请输入要解包的 mdx/mdd 文件路径: ").strip('"')
             self._export_mdx(mfile)
         elif sel == 2:
-            file_final_txt = input(f"请输入要打包的 txt 文件路径: ").strip('"')
+            file_final_txt = input("请输入要打包的 txt 文件路径: ").strip('"')
             if self.func.text_file_check(file_final_txt) == 2:
                 # 读取词条数
                 entry_total = self.func.merge_and_count([file_final_txt], file_final_txt)
@@ -52,46 +56,114 @@ class AutoMdxBuilder:
                 if done_flg:
                     print(Fore.GREEN + "\n打包完毕。")
             else:
-                print(Fore.RED + f"\n材料检查不通过, 请确保材料准备无误再执行程序")
+                print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
         elif sel == 3:
-            dir_data = input(f"请输入要打包的资料文件夹路径: ").strip('"')
+            dir_data = input("请输入要打包的资料文件夹路径: ").strip('"')
             dir_data = dir_data.rstrip('\\')
+            dir_data = dir_data.rstrip('/')
             print('\n------------------\n开始打包……\n')
             done_flg = self._build_mdd(dir_data, None)
             if done_flg:
                 print(Fore.GREEN + "\n打包完毕。")
-        elif sel == 4:
+        elif sel == 21:
+            """ 制作图像词典 (模板A) """
             self.imgdicta = ImgDictAtmpl()
             # 生成 txt 源文本
             proc_flg, file_final_txt, dir_imgs_out, file_dict_info = self.imgdicta.make_source_file()
             if proc_flg:
-                # 创建输出文件夹, 开始打包
+                # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
-                print('\n------------------\n开始打包……\n')
-                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
-                if done_flg:
-                    print("\n打包完毕。"+ Fore.GREEN + "\n\n恭喜, 词典已生成！")
                 # 如果有 css 文件就拷贝过来
                 file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 if os.path.exists(file_css_tmp):
-                    text = ''
-                    with open(file_css_tmp, 'r', encoding='utf-8') as fr:
-                        text = fr.read()
-                    with open(file_css, 'w', encoding='utf-8') as fw:
-                        fw.write(text)
-        elif sel == 5:
-            pass
-        elif sel == 6:
-            file_raw_toc = input(f"请输入要处理成 toc.txt 的文件路径: ").strip('"')
-            done_flg = self._format_toc(file_raw_toc)
-            if done_flg:
+                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                # 开始打包
+                print('\n------------------\n开始打包……\n')
+                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                if done_flg:
+                    print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
+        elif sel == 22:
+            """ 制作图像词典 (模板B) """
+            self.imgdictb = ImgDictBtmpl()
+            # 生成 txt 源文本
+            proc_flg, file_final_txt, dir_imgs_out, file_dict_info = self.imgdictb.make_source_file()
+            if proc_flg:
+                # 创建输出文件夹
+                if not os.path.exists(self.settings.dir_output):
+                    os.makedirs(self.settings.dir_output)
+                # 如果有 css 文件就拷贝过来
+                file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
+                file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
+                if os.path.exists(file_css_tmp):
+                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                # 开始打包
+                print('\n------------------\n开始打包……\n')
+                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                if done_flg:
+                    print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
+        elif sel == 23:
+            """ 制作文本词典 (模板C) """
+            self.textdictc = TextDictCtmpl()
+            # 生成 txt 源文本
+            proc_flg, file_final_txt, file_dict_info = self.textdictc.make_source_file()
+            if proc_flg:
+                # 创建输出文件夹
+                if not os.path.exists(self.settings.dir_output):
+                    os.makedirs(self.settings.dir_output)
+                # 如果有 css 文件就拷贝过来
+                file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
+                file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
+                if os.path.exists(file_css_tmp):
+                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                # 开始打包
+                print('\n------------------\n开始打包……\n')
+                dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
+                if not os.path.exists(dir_data) or len(os.listdir(dir_data)) == 0:
+                    dir_data = None
+                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
+                if done_flg:
+                    print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
+        elif sel == 24:
+            """ 制作文本词典 (模板D) """
+            self.textdictd = TextDictDtmpl()
+            # 生成 txt 源文本
+            proc_flg, file_final_txt, file_dict_info = self.textdictd.make_source_file()
+            if proc_flg:
+                # 创建输出文件夹
+                if not os.path.exists(self.settings.dir_output):
+                    os.makedirs(self.settings.dir_output)
+                # 如果有 css 文件就拷贝过来
+                file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
+                file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
+                if os.path.exists(file_css_tmp):
+                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                # 开始打包
+                print('\n------------------\n开始打包……\n')
+                dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
+                if not os.path.exists(dir_data) or len(os.listdir(dir_data)) == 0:
+                    dir_data = None
+                done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
+                if done_flg:
+                    print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
+        elif sel == 31:
+            file_index_all = input(f"请输入 index_all.txt 的文件路径: ").strip('"')
+            file_toc_all = os.path.join(os.path.split(file_index_all)[0], 'toc_all.txt')
+            if self.func.index_to_toc(file_index_all, file_toc_all):
                 print(Fore.GREEN + "\n处理完成, 生成在同目录下")
+            else:
+                print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码")
+        elif sel == 32:
+            file_toc_all = input(f"请输入 toc_all.txt 的文件路径: ").strip('"')
+            file_index_all = os.path.join(os.path.split(file_toc_all)[0], 'index_all.txt')
+            if self.func.toc_to_index(file_toc_all, file_index_all):
+                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
+            else:
+                print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
         else:
             pass
-        a = input('\n------------------\n回车退出程序：')
-
+        input('\n------------------\n回车退出程序：')
 
     def _export_mdx(self, mfile):
         """ 解包 mdx/mdd (取代 MdxExport.exe) """
@@ -127,7 +199,6 @@ class AutoMdxBuilder:
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
 
-
     def _build_mdict(self, file_final_txt, file_dict_info, dir_data, dir_output):
         """ 打包 mdx/mdd (取代 MdxBuilder.exe) """
         mdx_flg = True
@@ -147,7 +218,6 @@ class AutoMdxBuilder:
             return True
         else:
             return False
-
 
     def _build_mdd(self, dir_data, ftitle):
         """ 仅打包 mdd (取代 MdxBuilder.exe) """
@@ -247,39 +317,6 @@ class AutoMdxBuilder:
         return pack_flg
 
 
-    def _format_toc(self, file_raw_toc):
-        """ 处理成标准 toc.txt 文件 """
-        done_flg = True
-        file_toc = os.path.join(os.path.split(file_raw_toc)[0], 'toc_all.txt')
-        if self.func.text_file_check(file_raw_toc) == 2:
-            pat1 = re.compile(r'^【L(\d+)】([^\t]+\t[\-\d]+[\r\n]*)$')
-            pat2 = re.compile(r'^[^【][^\t]*\t[\-\d]+[\r\n]*$')
-            with open(file_toc, 'w', encoding='utf-8') as fw:
-                with open(file_raw_toc, 'r', encoding='utf-8') as fr:
-                    lines = fr.readlines()
-                    level = 1
-                    i = 0
-                    for line in lines:
-                        i += 1
-                        if pat1.match(line):
-                            mth = pat1.match(line)
-                            level = int(mth.group(1))
-                            fw.write('\t'*(level-1) + mth.group(2))
-                        elif pat2.match(line):
-                            fw.write('\t'*level + line)
-                        else:
-                            print(f"第 {i} 行未匹配, 请检查")
-                            done_flg = False
-        else:
-            done_flg = False
-        return done_flg
-
-    def _combine_to_toc(self):
-        """ 将 toc.txt 和 index.txt 合并成 toc_all.txt 文件
-        合并完自己还要再检查一下
-        """
-        pass
-
 if __name__ == '__main__':
     init(autoreset=True)
     # 功能选单
@@ -288,16 +325,19 @@ if __name__ == '__main__':
     print(Fore.CYAN + "  1" + Fore.RESET + ".解包 mdx/mdd 文件")
     print(Fore.CYAN + "  2" + Fore.RESET + ".打包成 mdx 文件")
     print(Fore.CYAN + "  3" + Fore.RESET + ".打包成 mdd 文件")
-    print("\n(二) 制作词典 (需于 raw 文件夹放置好原材料)")
-    print(Fore.CYAN + "  4" + Fore.RESET + ".制作图像词典 (模板A)")
-    print(Fore.CYAN + "  5" + Fore.RESET + ".制作图像词典 (模板B)")
+    print("\n(二) 制作词典" + Fore.YELLOW + " (需于 raw 文件夹放置好原材料)")
+    print(Fore.CYAN + "  21" + Fore.RESET + ".制作图像词典 (模板A)")
+    print(Fore.CYAN + "  22" + Fore.RESET + ".制作图像词典 (模板B)")
+    print(Fore.CYAN + "  23" + Fore.RESET + ".制作文本词典 (模板C)")
+    print(Fore.CYAN + "  24" + Fore.RESET + ".制作文本词典 (模板D)")
     print("\n(三) 其他")
-    print(Fore.CYAN + "  6" + Fore.RESET + ".处理成 toc_all.txt 文件")
-    print(Fore.CYAN + "  [开发中]7" + Fore.RESET + ".(将 toc.txt 和 index.txt) 合并成 toc_all.txt 文件")
+    print(Fore.CYAN + "  31" + Fore.RESET + ".将 index_all.txt 处理成 toc_all.txt 文件")
+    print(Fore.CYAN + "  32" + Fore.RESET + ".将 toc_all.txt 处理成 index_all.txt 文件")
+    # print(Fore.CYAN + "  10" + Fore.RESET + ".(将 toc.txt 和 index.txt) 合并成 index_all.txt 文件")
     print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
     sel = int(input('\n请输入数字: '))
     # 执行选择
-    if sel in range(1,8):
+    if sel in range(50):
         print('\n------------------')
         amb = AutoMdxBuilder()
         amb.auto_processing(sel)

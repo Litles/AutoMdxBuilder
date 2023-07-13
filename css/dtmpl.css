@@ -1,0 +1,85 @@
+/*预定义*/
+ul {
+    margin-right: 0px;
+    margin-left: 32px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    padding: 0px;
+}
+p {
+    text-indent: 2em;
+    margin:4px auto;
+}
+a {text-decoration:none}
+
+/*----------导航------------*/
+/*原索引 (不展示)*/
+div.index-all {display: none;}
+/*导航框*/
+div.top-navi-level {
+	margin: 12px 0px 6px 0px;
+	padding: 3px 0px;
+	border-top: 2px solid #ef8b14;
+	border-bottom: 1px solid #ef8b14;/*#ef8b14; #8470FF*/
+}
+span.sep-navi {margin-left: 4px; margin-right: 4px; color: black; font-size: 90%;}
+div.bottom-navi {
+	margin: 12px 0px 6px 0px;
+	padding: 3px 0px;
+	border-top: 1px dotted #3c4457;
+	border-bottom: 1px dotted #3c4457;/*#ef8b14; #8470FF #ef8b14*/
+	text-align:center;
+	color:#3c4457;
+}
+/*导航链接*/
+div.bottom-navi a:link {color: grey;}
+div.bottom-navi a:hover {background:yellow;}
+div.bottom-navi a:visited {color: grey}
+/*导航链接 (多级) */
+div.top-navi-level a:link {color: #7c0000;}
+div.top-navi-level a:hover {background: yellow;}
+div.top-navi-level a:visited {color: #7c0000}
+div.top-navi-level span.navi-item-entry a:link {color: #C30A50;}
+div.top-navi-level span.navi-item-entry a:hover {background: yellow;}
+div.top-navi-level span.navi-item-entry a:visited {color: #C30A50}
+span.navi-item{
+    margin: 0px 0px 0px 0px;
+}
+span.navi-item-entry{
+    margin: 0px 0px 0px 0px;
+}
+span.navi-item-left{
+    margin: 0px 0px 0px 4px;
+    float: left;
+}
+span.navi-item-middle span.navi-item{
+    margin: 0px 6px 0px 6px;
+}
+span.navi-item-right{
+    margin: 0px 4px 0px 0px;
+    float: right;
+}
+
+/*----------词条------------*/
+/*目录标题*/
+div.toc-title {
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 120%;
+}
+/*目录链接*/
+div.toc-text a:link {color: blue;}
+div.toc-text a:hover {background:yellow;}
+span.sep-list {color: grey; font-size: 90%;}
+/*词目*/
+div.entry-headword {
+    text-align: left;
+    font-weight: bold;
+    font-size: 110%;
+    color: #a50000;
+}
+/*正文*/
+div.entry-body {}
+/*数据来源*/
+p.source {text-align: right; color: grey; font-size: 90%;}

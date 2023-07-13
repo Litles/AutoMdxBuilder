@@ -1,0 +1,33 @@
+/*预定义*/
+ul {
+    margin-right: 0px;
+    margin-left: 32px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    padding: 0px;
+}
+p {
+    text-indent: 2em;
+    margin:4px auto;
+}
+a {text-decoration:none}
+
+/*----------词条------------*/
+/*词目*/
+div.entry-headword {
+    text-align: left;
+    font-weight: bold;
+    font-size: 110%;
+    color: #2F49A5;
+}
+/*目录标题*/
+div.toc-title {
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 120%;
+}
+/*正文*/
+div.entry-body {}
+/*数据来源*/
+p.source {text-align: right; color: grey; font-size: 90%;}

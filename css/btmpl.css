@@ -1,0 +1,90 @@
+/*预定义*/
+ul {
+    margin-right: 0px;
+    margin-left: 32px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+    padding: 0px;
+}
+p {
+    text-indent: 2em;
+    margin:4px auto;
+}
+a {text-decoration:none}
+
+/*----------导航------------*/
+/*原索引 (不展示)*/
+div.index-all {display: none;}
+/*导航框*/
+div.top-navi-level{
+    margin: 0px 0px 0px 0px;
+    padding: 3px 0px 3px 4px;
+    border-top: 3px solid #3b264d;
+    background-color: #CC9933; /* CD284C */
+    font-weight: bold;
+    text-align: left;
+}
+span.sep-navi {margin-left: 4px; margin-right: 4px; color: black; font-size: 90%;}
+div.top-navi{
+    margin: 0px 0px 0px 0px;
+    padding: 3px 0px;
+    border-top: 3px solid #3b264d;
+    background-color: #CC9933; /* CD284C */
+    font-weight: bold;
+    text-align: center;
+}
+div.bottom-navi{
+    margin: 0px 0px 0px 0px;
+    padding: 3px 0px;
+    border-bottom: 1px solid #3b264d;/*#ef8b14; #8470FF*/
+    background-color: #EAEAEA;
+    text-align: center;
+}
+/*导航链接*/
+div.top-navi a:link {color: #ffffff;}
+div.top-navi a:hover {background:green;}
+div.top-navi a:visited {color: #ffffff} /* FFFF99 */
+div.bottom-navi a:link {color: blue;}
+div.bottom-navi a:hover {background:yellow;}
+/*导航链接 (多级) */
+div.top-navi-level a:link {color: #ffffff;}
+div.top-navi-level a:hover {background:green;}
+div.top-navi-level a:visited {color: #ffffff} /* FFFF99 */
+div.top-navi-level span.navi-item-entry a:link {color: #FFFF99;}
+div.top-navi-level span.navi-item-entry a:hover {background:green;}
+div.top-navi-level span.navi-item-entry a:visited {color: #FFFF99} /* FFFF99 */
+span.navi-item{
+    margin: 0px 0px 0px 0px;
+}
+span.navi-item-entry{
+    margin: 0px 0px 0px 0px;
+}
+span.navi-item-left{
+    margin: 0px 0px 0px 4px;
+    float: left;
+}
+span.navi-item-middle span.navi-item{
+    margin: 0px 6px 0px 6px;
+}
+span.navi-item-right{
+    margin: 0px 4px 0px 0px;
+    float: right;
+}
+
+/*----------词条------------*/
+/*图片*/
+div.main-img img{
+    text-align: center;
+    width: 100%;
+}
+/*目录标题*/
+div.toc-title {
+    text-align: center;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 120%;
+}
+/*目录链接*/
+div.toc-text a:link {color: blue;}
+div.toc-text a:hover {background:yellow;}
+span.sep-list {color: grey; font-size: 90%;}
