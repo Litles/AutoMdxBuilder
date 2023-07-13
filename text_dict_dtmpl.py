@@ -115,7 +115,7 @@ class TextDictDtmpl:
                         part_right = f'<span class="navi-item-right"><a href="entry://{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
                     part_bottom = '<div class="bottom-navi">' + part_left + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + part_right + '</div>\n'
                     # 合并写入
-                    fw.write(part_title+part_css+part_top+part_list+part_headword+part_body+part_bottom+'</>\n')
+                    fw.write(part_title+part_css+part_index+part_top+part_list+part_headword+part_body+part_bottom+'</>\n')
                     # 收集顶级章节
                     if dct["level"] == 0:
                         tops.append(dct["title"])
