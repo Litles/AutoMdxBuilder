@@ -17,33 +17,33 @@
 * 制作文本词典 (模板D，导航版)
 
 ## 成品预览
-#### 1.图像词典 (模板A，朴素版)
+#### 图像词典 (模板A，朴素版)
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/img_dict_atmpl.gif)
 
-#### 2.图像词典 (模板B，导航版)
+#### 图像词典 (模板B，导航版)
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/img_dict_btmpl.gif)
 
-#### 3.文本词典 (模板C，朴素版)
+#### 文本词典 (模板C，朴素版)
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/text_dict_ctmpl.png)
 
-#### 4.文本词典 (模板D，导航版)
+#### 文本词典 (模板D，导航版)
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/text_dict_dtmpl.gif)
 
 ## 使用方法
 
 ### 使用步骤
 
-#### 1.准备工具
+#### （一）准备工具
 1. 安装 Python。（Windows）从 [Python官网](https://www.python.org) 下载安装 Python 的 `.exe` 包，运行按提示安装即可；
 2. 解压本工具 [AutoMdxBuilder_xx.zip](https://github.com/Litles/AutoMdxBuilder/releases) 作为工作文件夹（假设为 AutoMdxBuilder）；
 3. 安装 Python 模块包。在 AutoMdxBuilder  内执行 `pip install -r requirements.txt`即可（或手动挨个安装 `requirements.txt` 中所列包也行）；
 
-#### 2.制作词典
+#### （二）制作词典
 4. 准备词典制作所需的原材料。在 AutoMdxBuilder 文件夹内创建子文件夹 `raw`，将原材料按要求放置其内（**具体参见下面说明**）；
 5. 修改好 `settings.py` 配置文件（**具体参见下面说明**）；
 6. 运行 auto_mdx_builder.py （可直接双击），按对话框提示输入。词典成品将生成在 `out` 子文件夹内，过程文件存放在 `_tmp` 子文件夹内以备用。
 
-### 原材料准备说明
+### 原材料准备具体说明
 
 制作词典才需要在子文件夹 `raw` 内放置原材料，如果是使用程序的其他功能则不涉及。制作不同模板的词典，所需的原材料也不尽相同，下面分模板说明：
 
@@ -60,22 +60,22 @@
 * `raw` 文件夹中只放置需要用到的文件/文件夹，**不用到的不要出现在 raw 文件夹内**；
 * 文件夹和文件的名称就按本说明所提的，不建议自定义名称。
 
-#### 1.图像词典 (模板A)
+#### 图像词典 (模板A)
 
 * （必须）`imgs` 文件夹：存放图像文件，不限定图片格式，png、jpg 等均可，也无特定的名称要求（顺序是对的就行）；
 * （必须）`index.txt` 文件：索引文件
 * （可选）`toc.txt` 文件：目录文件
 
-#### 2.图像词典 (模板B)
+#### 图像词典 (模板B)
 
 * （必须）`imgs` 文件夹：存放图像文件，同模板A
 * （必须）`index_all.txt` 文件：全索引文件
 
-#### 3.文本词典 (模板C)
+#### 文本词典 (模板C)
 
 * （必须）`index.txt` 文件：索引文件
 
-#### 4.文本词典 (模板D)
+#### 文本词典 (模板D)
 
 * （必须）`index_all.txt` 文件：全索引文件
 
