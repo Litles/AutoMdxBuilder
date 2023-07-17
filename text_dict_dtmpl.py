@@ -13,7 +13,7 @@ from func_lib import FuncLib
 
 
 class TextDictDtmpl:
-    """ 图像词典（模板B） """
+    """ 文本词典（模板D） """
     def __init__(self):
         self.settings = Settings()
         self.func = FuncLib()
@@ -35,24 +35,31 @@ class TextDictDtmpl:
             # (一) 生成文本(主)词条, 带层级导航
             file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_text_with_navi)
             file_index_all = os.path.join(self.settings.dir_input, self.settings.fname_index_all)
-            self._make_entries_text_with_navi(file_index_all, file_1)
+            words_part1 = self._make_entries_text_with_navi(file_index_all, file_1)
             step += 1
             print(f'{step}.文件 "{self.settings.fname_entries_text_with_navi}" 已生成；')
             # (二) 生成近义词重定向
             file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)
+            words_part2 = []
             if self.proc_flg_syns:
-                self._make_redirects_syn(file_2)
+                words_part2 = self.func.make_redirects_syn(file_2)
                 step += 1
                 print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
-            # (三) 合并成最终 txt 源文本
+            # (三) 生成繁简通搜重定向
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_st)
+            if self.settings.simp_trad_flg:
+                self.func.make_redirects_st(words_part1+words_part2, file_3)
+                step += 1
+                print(f'{step}.文件 "{self.settings.fname_redirects_st}" 已生成；')
+            # 合并成最终 txt 源文本
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
-            entry_total = self.func.merge_and_count([file_1, file_2], file_final_txt)
+            entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
             print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
-            # (四) 生成 css 文件
+            # 生成 css 文件
             file_css = os.path.join(self.settings.dir_css, self.settings.css_dtmpl)
             file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
             os.system(f"copy /y {file_css} {file_css_out}")
-            # (五) 生成 info.html
+            # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
             file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, 0)
             return self.proc_flg, file_final_txt, file_dict_info
@@ -61,6 +68,7 @@ class TextDictDtmpl:
             return self.proc_flg, None, None
 
     def _make_entries_text_with_navi(self, file_index_all, file_out):
+        words = []
         """ (一) 生成文本(主)词条, 带层级导航 """
         # 1.读取全索引文件
         proc_flg, dcts = self._read_index_all(file_index_all)
@@ -116,6 +124,7 @@ class TextDictDtmpl:
                     part_bottom = '<div class="bottom-navi">' + part_left + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + part_right + '</div>\n'
                     # 合并写入
                     fw.write(part_title+part_css+part_index+part_top+part_list+part_headword+part_body+part_bottom+'</>\n')
+                    words.append(dct["title"])
                     # 收集顶级章节
                     if dct["level"] == 0:
                         tops.append(dct["title"])
@@ -130,6 +139,7 @@ class TextDictDtmpl:
                 toc_entry += '</ul><div class="bottom-navi">' + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + '</div>\n'
                 toc_entry += '</div>\n</>\n'
                 fw.write(toc_entry)
+        return words
 
     def _get_item_list(self, dct):
         html = ''
@@ -263,32 +273,6 @@ class TextDictDtmpl:
                     dct["children"] = []
                     dct["entry_list"] = False
         return done_flg, dcts
-
-    def _make_redirects_syn(self, file_out):
-        """ (二) 生成近义词重定向 """
-        # 1.读取重定向索引
-        file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
-        syns = []
-        with open(file_syns, 'r', encoding='utf-8') as fr:
-            lines = fr.readlines()
-            pat = re.compile(r'^([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
-            i = 1
-            for line in lines:
-                if pat.match(line):
-                    part_1 = pat.match(line).group(1)
-                    part_2 = pat.match(line).group(2)
-                    syn = {
-                        "syn": part_1,
-                        "origin": part_2
-                    }
-                    syns.append(syn)
-                else:
-                    print(Fore.YELLOW + "INFO: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
-                i += 1
-        # 2.生成重定向
-        with open(file_out, 'w', encoding='utf-8') as fw:
-            for syn in syns:
-                fw.write(f'{syn["syn"]}\n@@@LINK={syn["origin"]}\n</>\n')
 
     def _check_raw_files(self):
         """ 检查原材料
