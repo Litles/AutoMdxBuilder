@@ -9,9 +9,9 @@ class Settings:
     """ 词典设置 """
     def __init__(self):
         # 模板 A,B,C,D
-        self.name = '文史工具书词典'
+        self.name = '委婉语应用辞典'
         # 模板 A,B,C,D
-        self.name_abbr = 'WSGJSCD'  # 书名首字母缩写
+        self.name_abbr = 'WWYYYCD'  # 书名首字母缩写
         # 模板 A,B
         self.body_start = 61  # 正文起始页为第几张图(>=1)
         # 模板 A,B,C,D

@@ -68,7 +68,7 @@ class ImgDictBtmpl:
             # 生成 css 文件
             file_css = os.path.join(self.settings.dir_css, self.settings.css_btmpl)
             file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
-            os.system(f"copy /y {file_css} {file_css_out}")
+            os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
             file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, p_total)
@@ -81,7 +81,7 @@ class ImgDictBtmpl:
         """ (二) 生成主体词条, 带层级导航 """
         words = []
         # 1.读取全索引文件
-        proc_flg, dcts = self._read_index_all(file_index_all)
+        proc_flg, dcts = self.func.read_index_all(True, file_index_all)
         # 2.生成主体词条
         if proc_flg:
             with open(file_out, 'w', encoding='utf-8') as fw:
@@ -106,13 +106,13 @@ class ImgDictBtmpl:
                             part_top += f'<span class="sep-navi">»</span><span class="navi-item"><a href="entry://{dct["navi_bar"][x]}">{dct["navi_bar"][x]}</a></span>'
                     part_top += '</div>\n'
                     # item-list 部分
-                    part_list = self._get_item_list(dct)
+                    part_list = self.func.get_item_list(dct)
                     # 图像(正文)部分
-                    if dct["page"] < 0:
-                        i = dct["page"]+self.settings.body_start-1
+                    if dct["body"] < 0:
+                        i = dct["body"]+self.settings.body_start-1
                     else:
-                        i = dct["page"]+self.settings.body_start-2
-                    if dct["level"] != -1 and dct["page"] == 0:
+                        i = dct["body"]+self.settings.body_start-2
+                    if dct["level"] != -1 and dct["body"] == 0:
                         part_img = ''
                     else:
                         part_img = f'<div class="main-img"><img src="/{imgs[i]["name"]}"></div>\n'
@@ -144,140 +144,6 @@ class ImgDictBtmpl:
                 fw.write(toc_entry)
         return words
 
-    def _get_item_list(self, dct):
-        html = ''
-        if dct["level"] == -1:
-            pass
-        elif dct["entry_list"]:
-            html += '<div class="toc-list"><p>'
-            i = 0
-            for item in dct["children"]:
-                i += 1
-                if i == 1:
-                    html += f'<a href="entry://{item}">{item}</a>'
-                else:
-                    html += f'<span class="sep-list">／</span><a href="entry://{item}">{item}</a>'
-            html += '</p></div>\n'
-        elif len(dct["children"]) != 0:
-            html += '<div class="toc-list"><ul>'
-            for item in dct["children"]:
-                html += f'<li><a href="entry://{item}">{item}</a></li>'
-            html += '</ul></div>\n'
-        else:
-            pass
-        return html
-
-    def _read_index_all(self, file_index_all):
-        done_flg = True
-        dcts = []
-        dct_chaps = []
-        tail_ids = []
-        # 用于收集末章节的子词条
-        tail_list = []
-        tail = {"id": 0, "children": []}
-        with open(file_index_all, 'r', encoding='utf-8') as fr:
-            pat1 = re.compile(r'^【L(\d+)】([^\t]+)\t([\-\d]*)[\r\n]*$')  # 匹配章节词头
-            pat2 = re.compile(r'^([^【][^\t]*)\t([\-\d]+)[\r\n]*$')  # 匹配词条词头
-            lines = fr.readlines()
-            i = 0
-            navi_bar = [None, None, None, None, None, None, None, None]
-            navi_bar_tmp = []
-            for line in lines:
-                i += 1
-                checked_flg = False
-                if pat1.match(line):
-                    mth = pat1.match(line)
-                    if mth.group(3) == '':
-                        page = 0
-                    else:
-                        page = int(mth.group(3))
-                    dct = {
-                        "id": i,
-                        "level": int(mth.group(1)),
-                        "title": mth.group(2),
-                        "page": page
-                    }
-                    # navi_bar 构造
-                    navi_bar[int(mth.group(1))] = mth.group(2)
-                    navi_bar_tmp = navi_bar[:int(mth.group(1))+1]
-                    dct["navi_bar"] = navi_bar_tmp
-                    dct_chaps.append(dct)
-                    # 子词条清“篮子”
-                    if len(tail["children"]) != 0:
-                        tail_list.append({"id": tail["id"], "children": tail["children"]})
-                        tail_ids.append(tail["id"])
-                    checked_flg = True
-                    tail["id"] = i
-                    tail["children"] = []
-                elif pat2.match(line):
-                    mth = pat2.match(line)
-                    dct = {
-                        "id": i,
-                        "level": -1,
-                        "title": mth.group(1),
-                        "page": int(mth.group(2))
-                    }
-                    dct["navi_bar"] = navi_bar_tmp + [mth.group(1)]
-                    # 收集子词条
-                    tail["children"].append(mth.group(1))
-                else:
-                    print(f"第 {i} 行未匹配, 请检查")
-                    done_flg = False
-                    break
-                dcts.append(dct)
-            # 遍历完成后补漏
-            if not checked_flg and len(tail["children"]) != 0:
-                tail_list.append({"id": tail["id"], "children": tail["children"]})
-                tail_ids.append(tail["id"])
-        # 用于收集大章节的子章节
-        stem_ids = []
-        stem_list = []
-        stem = {"id": 0, "children": []}
-        for i in range(len(dct_chaps)-1):
-            dct_obj = dct_chaps[i]
-            stem["id"] = dct_obj["id"]
-            stem["children"] = []
-            checked_flg = False
-            for dct in dct_chaps[i+1:]:
-                if dct["level"] == dct_obj["level"]+1:
-                    stem["children"].append(dct["title"])
-                elif dct["level"] <= dct_obj["level"]:
-                    if len(stem["children"]) != 0:
-                        stem_list.append({"id": stem["id"], "children": stem["children"]})
-                        stem_ids.append(stem["id"])
-                    checked_flg = True
-                    break
-            # 补漏收
-            if not checked_flg and len(stem["children"]) != 0:
-                stem_list.append({"id": stem["id"], "children": stem["children"]})
-                stem_ids.append(stem["id"])
-        # 检查
-        if len(tail_ids+stem_ids) != len(set(tail_ids+stem_ids)):
-            done_flg = False
-            print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {file_index_all} 解析出现矛盾")
-        else:
-            # 整合所有信息
-            for dct in dcts:
-                if dct["level"] == -1:
-                    dct["children"] = []
-                    dct["entry_list"] = False
-                elif dct["id"] in tail_ids:
-                    for item in tail_list:
-                        if dct["id"] == item["id"]:
-                            dct["children"] = item["children"]
-                            dct["entry_list"] = True
-                            break
-                elif dct["id"] in stem_ids:
-                    for item in stem_list:
-                        if dct["id"] == item["id"]:
-                            dct["children"] = item["children"]
-                            dct["entry_list"] = False
-                            break
-                else:
-                    dct["children"] = []
-                    dct["entry_list"] = False
-        return done_flg, dcts
-
     def _check_raw_files(self):
         """ 检查原材料
         * 必要文本存在(文本编码均要是 utf-8 无 bom)
@@ -305,7 +171,7 @@ class ImgDictBtmpl:
                     if pat.match(line):
                         i = int(pat.match(line).group(2))
                         max_index = max(max_index, i)
-            proc_flg, dcts = self._read_index_all(file_index_all)
+            proc_flg, dcts = self.func.read_index_all(True, file_index_all)
         elif self.func.text_file_check(file_toc_all) == 2:
             index_all_flg = False
             # 读取词条索引

@@ -58,7 +58,7 @@ class TextDictCtmpl:
             # 生成 css 文件
             file_css = os.path.join(self.settings.dir_css, self.settings.css_ctmpl)
             file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
-            os.system(f"copy /y {file_css} {file_css_out}")
+            os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
             file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, 0)

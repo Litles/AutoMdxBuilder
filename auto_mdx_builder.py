@@ -78,7 +78,7 @@ class AutoMdxBuilder:
                 file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 if os.path.exists(file_css_tmp):
-                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                    os.system(f'copy /y "{file_css_tmp}" "{file_css}"')
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
                 done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
@@ -97,7 +97,7 @@ class AutoMdxBuilder:
                 file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 if os.path.exists(file_css_tmp):
-                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                    os.system(f'copy /y "{file_css_tmp}" "{file_css}"')
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
                 done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
@@ -116,7 +116,7 @@ class AutoMdxBuilder:
                 file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 if os.path.exists(file_css_tmp):
-                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                    os.system(f'copy /y "{file_css_tmp}" "{file_css}"')
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
                 dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
@@ -138,7 +138,7 @@ class AutoMdxBuilder:
                 file_css_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 if os.path.exists(file_css_tmp):
-                    os.system(f"copy /y {file_css_tmp} {file_css}")
+                    os.system(f'copy /y "{file_css_tmp}" "{file_css}"')
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
                 dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
@@ -163,13 +163,12 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
         else:
             pass
-        input('\n------------------\n回车退出程序：')
 
     def _export_mdx(self, mfile):
         """ 解包 mdx/mdd (取代 MdxExport.exe) """
         if os.path.isfile(mfile) and mfile.endswith('.mdx'):
             out_dir = os.path.splitext(mfile)[0]
-            os.system(f"mdict -x {mfile} -d {out_dir}")
+            os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
             for fname in os.listdir(out_dir):
                 fp = os.path.join(out_dir, fname)
                 if os.path.isfile(fp):
@@ -192,9 +191,9 @@ class AutoMdxBuilder:
                 mdd_names.sort()
                 for mdd_name in mdd_names:
                     print(f"开始解压 '{mdd_name}' :\n")
-                    os.system(f"mdict -x {os.path.join(cur_dir, mdd_name)} -d {out_dir}")
+                    os.system(f'mdict -x "{os.path.join(cur_dir, mdd_name)}" -d "{out_dir}"')
             else:
-                os.system(f"mdict -x {mfile} -d {out_dir}")
+                os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
             print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.RESET + out_dir)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
@@ -207,7 +206,7 @@ class AutoMdxBuilder:
         print('正在生成 mdx 文件……\n')
         ftitle = os.path.join(dir_output, os.path.splitext(os.path.split(file_final_txt)[1])[0])
         if os.path.exists(file_final_txt) and os.path.exists(file_dict_info):
-            os.system(f"mdict --description {file_dict_info} --encoding utf-8 -a {file_final_txt} {ftitle}.mdx")
+            os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{file_final_txt}" "{ftitle}.mdx"')
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {file_final_txt} 或 {file_dict_info} 不存在")
             mdx_flg = False
@@ -221,7 +220,7 @@ class AutoMdxBuilder:
 
     def _build_mdd(self, dir_data, ftitle):
         """ 仅打包 mdd (取代 MdxBuilder.exe) """
-        pack_flg = True
+        done_flg = True
         if ftitle is None:
             ftitle = dir_data
         # 判断是否打包
@@ -233,6 +232,7 @@ class AutoMdxBuilder:
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件夹 {dir_data} 不存在或为空")
             pack_flg = False
+            done_flg = False
         # 开始打包
         if pack_flg:
             print('正在生成 mdd 文件……\n')
@@ -248,8 +248,8 @@ class AutoMdxBuilder:
                 # 判断子文件夹大小
                 for sub_dir in sub_dirs:
                     for fname in os.listdir(sub_dir):
-                        if os.path.isfile(os.path.join(sub_dir,fname)):
-                            size_sum += os.path.getsize(os.path.join(sub_dir,fname))
+                        if os.path.isfile(os.path.join(sub_dir, fname)):
+                            size_sum += os.path.getsize(os.path.join(sub_dir, fname))
                         if size_sum > 1536000000:
                             split_flg = True
                             break
@@ -285,9 +285,9 @@ class AutoMdxBuilder:
                         os.rename(sd, os.path.join(tmp_dir, os.path.split(sd)[1]))
                     # 移完之后打包
                     if mdd_rk == 0:
-                        os.system(f"mdict -a {tmp_dir} {ftitle}.mdd")
+                        os.system(f'mdict -a "{tmp_dir}" "{ftitle}.mdd"')
                     else:
-                        os.system(f"mdict -a {tmp_dir} {ftitle}.{str(mdd_rk)}.mdd")
+                        os.system(f'mdict -a "{tmp_dir}" "{ftitle}.{str(mdd_rk)}.mdd"')
                     # 打包完再移回去
                     for fname in os.listdir(tmp_dir):
                         os.rename(os.path.join(tmp_dir, fname), os.path.join(dir_data, fname))
@@ -305,7 +305,7 @@ class AutoMdxBuilder:
                 if len(os.listdir(tmp_dir)) == 0:
                     pass
                 else:
-                    os.system(f"mdict -a {tmp_dir} {ftitle}.{str(mdd_rk)}.mdd")
+                    os.system(f'mdict -a "{tmp_dir}" "{ftitle}.{str(mdd_rk)}.mdd"')
                     # 移回去
                     for fname in os.listdir(tmp_dir):
                         os.rename(os.path.join(tmp_dir, fname), os.path.join(dir_data, fname))
@@ -313,31 +313,40 @@ class AutoMdxBuilder:
                 if os.path.exists(tmp_dir):
                     os.rmdir(tmp_dir)
             else:
-                os.system(f"mdict -a {dir_data} {ftitle}.mdd")
-        return pack_flg
+                os.system(f'mdict -a "{dir_data}" "{ftitle}.mdd"')
+        return done_flg
 
 
 if __name__ == '__main__':
     init(autoreset=True)
-    # 功能选单
+    # 程序开始
     print(Fore.GREEN + "欢迎使用 AutoMdxBuilder, 下面是功能选单:")
-    print("\n(一) 打包/解包")
-    print(Fore.CYAN + "  1" + Fore.RESET + ".解包 mdx/mdd 文件")
-    print(Fore.CYAN + "  2" + Fore.RESET + ".打包成 mdx 文件")
-    print(Fore.CYAN + "  3" + Fore.RESET + ".打包成 mdd 文件")
-    print("\n(二) 制作词典" + Fore.YELLOW + " (需于 raw 文件夹放置好原材料)")
-    print(Fore.CYAN + "  21" + Fore.RESET + ".制作图像词典 (模板A)")
-    print(Fore.CYAN + "  22" + Fore.RESET + ".制作图像词典 (模板B)")
-    print(Fore.CYAN + "  23" + Fore.RESET + ".制作文本词典 (模板C)")
-    print(Fore.CYAN + "  24" + Fore.RESET + ".制作文本词典 (模板D)")
-    print("\n(三) 其他")
-    print(Fore.CYAN + "  31" + Fore.RESET + ".将 index_all.txt 处理成 toc_all.txt 文件")
-    print(Fore.CYAN + "  32" + Fore.RESET + ".将 toc_all.txt 处理成 index_all.txt 文件")
-    # print(Fore.CYAN + "  10" + Fore.RESET + ".(将 toc.txt 和 index.txt) 合并成 index_all.txt 文件")
-    print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
-    sel = int(input('\n请输入数字: '))
-    # 执行选择
-    if sel in range(50):
-        print('\n------------------')
-        amb = AutoMdxBuilder()
-        amb.auto_processing(sel)
+    while True:
+        # 功能选单
+        print("\n(一) 打包/解包")
+        print(Fore.CYAN + "  1" + Fore.RESET + ".解包 mdx/mdd 文件")
+        print(Fore.CYAN + "  2" + Fore.RESET + ".打包成 mdx 文件")
+        print(Fore.CYAN + "  3" + Fore.RESET + ".打包成 mdd 文件")
+        print("\n(二) 制作词典" + Fore.YELLOW + " (需于 raw 文件夹放置好原材料, 并设置好 settings.py 文件)")
+        print(Fore.CYAN + "  21" + Fore.RESET + ".制作图像词典 (模板A)")
+        print(Fore.CYAN + "  22" + Fore.RESET + ".制作图像词典 (模板B)")
+        print(Fore.CYAN + "  23" + Fore.RESET + ".制作文本词典 (模板C)")
+        print(Fore.CYAN + "  24" + Fore.RESET + ".制作文本词典 (模板D)")
+        print("\n(三) 其他")
+        print(Fore.CYAN + "  31" + Fore.RESET + ".将 index_all.txt 处理成 toc_all.txt 文件")
+        print(Fore.CYAN + "  32" + Fore.RESET + ".将 toc_all.txt 处理成 index_all.txt 文件")
+        # print(Fore.CYAN + "  10" + Fore.RESET + ".(将 toc.txt 和 index.txt) 合并成 index_all.txt 文件")
+        print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
+        try:
+            sel = int(input('\n请输入数字: '))
+        except ValueError:
+            sel = 0
+        # 执行选择
+        if sel in range(1, 50):
+            print('\n------------------')
+            amb = AutoMdxBuilder()
+            amb.auto_processing(sel)
+        else:
+            break
+        print('\n\n------------------------------------')
+        print(Fore.GREEN + "回车退出程序, 或输入选项继续使用 AMB:")
