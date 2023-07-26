@@ -221,6 +221,7 @@ class AutoMdxBuilder:
     def _build_mdd(self, dir_data, ftitle):
         """ 仅打包 mdd (取代 MdxBuilder.exe) """
         done_flg = True
+        pack_flg = True
         if ftitle is None:
             ftitle = dir_data
         # 判断是否打包
