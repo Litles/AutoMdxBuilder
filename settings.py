@@ -9,11 +9,11 @@ class Settings:
     """ 词典设置 """
     def __init__(self):
         # 模板 A,B,C,D
-        self.name = '汉语委婉语词典'
+        self.name = '中国古代文学名著人物形象辞典'
         # 模板 A,B,C,D
-        self.name_abbr = 'HYWWYCD'  # 书名首字母缩写
+        self.name_abbr = 'WXMZRWXXCD'  # 书名首字母缩写
         # 模板 A,B
-        self.body_start = 38  # 正文起始页为第几张图(>=1)
+        self.body_start = 52  # 正文起始页为第几张图(>=1)
         # 模板 A,B,C,D
         self.simp_trad_flg = False  # 是否要繁简通搜
 

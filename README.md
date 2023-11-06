@@ -79,6 +79,8 @@
 
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/work_dir_tree.png)
 
+![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/imgs_order.png)
+
 ## 相关文件具体说明
 
 ### 配置文件 `settings.py`
