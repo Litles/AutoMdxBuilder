@@ -216,14 +216,14 @@ class ImgDictAtmpl:
         with open(file_out, 'w', encoding='utf-8') as fw:
             # a.词条部分
             for pair in pairs:
-                fw.write(f'{pair["title"]}\n@@@LINK={self.settings.name_abbr}_{str(pair["page"]).zfill(n_len)}\n</>\n')
+                fw.write(f'{pair["title"]}\n@@@LINK={self.settings.name_abbr}_B{str(pair["page"]).zfill(n_len)}\n</>\n')
                 words.append(pair["title"])
             # b.目录部分
             if proc_flg_toc:
                 for pair in pairs_toc:
                     if pair["page"] < 0:
-                        fw.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_B{str(pair["page"]+self.settings.body_start).zfill(n_len)}\n</>\n')
+                        fw.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_A{str(pair["page"]+self.settings.body_start).zfill(n_len)}\n</>\n')
                     else:
-                        fw.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_{str(pair["page"]).zfill(n_len)}\n</>\n')
+                        fw.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_B{str(pair["page"]).zfill(n_len)}\n</>\n')
                     words.append(pair["title"])
         return words

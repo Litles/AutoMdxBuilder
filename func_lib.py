@@ -441,13 +441,13 @@ class FuncLib():
             i += 1
             f_dir, f_name = os.path.split(img_file)
             f_ext = os.path.splitext(f_name)[1]
-            # 区分正文和辅页, 辅页多加前缀'B'
+            # 区分正文和辅页, 辅页前缀'A', 正文前缀'B'
             if i < self.settings.body_start:
                 i_str = str(i).zfill(n_len)
-                f_title_new = f'{self.settings.name_abbr}_B{i_str}'
+                f_title_new = f'{self.settings.name_abbr}_A{i_str}'
             else:
                 i_str = str(i-self.settings.body_start+1).zfill(n_len)
-                f_title_new = f'{self.settings.name_abbr}_{i_str}'
+                f_title_new = f'{self.settings.name_abbr}_B{i_str}'
             imgs.append({'title': f_title_new, 'name': f_title_new+f_ext})
             # 复制新文件到输出文件夹
             img_file_new = os.path.join(dir_imgs_out, f_title_new+f_ext)
