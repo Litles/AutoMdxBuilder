@@ -3,7 +3,7 @@
 # @Date    : 2023-07-13 19:50:28
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.3
+# @Version : 1.4
 
 import os
 import re
@@ -224,7 +224,7 @@ class FuncLib():
             if file_info_raw and os.path.exists(file_info_raw):
                 with open(file_info_raw, 'r', encoding='utf-8') as fr:
                     fw.write(fr.read())
-                fw.write(f"\n<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
+                fw.write(f"\n<div><br/>built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
             else:
                 print(Fore.YELLOW + "INFO: " + Fore.RESET + f"未找到描述文件, 将生成默认词典描述")
                 fw.write(f"<div>Name: {dict_name}</div>\n")
@@ -232,7 +232,7 @@ class FuncLib():
                 if p_total != 0:
                     fw.write(f"<div>Pages: {p_total}</div>\n")
                 fw.write(f"<div>Entries: {entry_total}</div>\n")
-                fw.write(f"<div><br/>built with AMB on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
+                fw.write(f"<div><br/>built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
         return file_info
 
     def get_item_list(self, dct):
@@ -432,7 +432,7 @@ class FuncLib():
             if os.path.isfile(fpath):
                 img_files.append(fpath)
         # 按旧文件名排序
-        img_files.sort()  # 正序排
+        img_files.sort(reverse=False)  # 正序排
         n_len = len(str(len(img_files)))  # 获取序号位数
         # 重命名
         imgs = []

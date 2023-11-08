@@ -3,7 +3,7 @@
 # @Date    : 2023-07-13 19:50:05
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.3
+# @Version : 1.4
 
 import os
 import re
@@ -210,3 +210,32 @@ class ImgDictBtmpl:
         if self.func.text_file_check(file_dict_info) == 1:
             proc_flg = False
         return proc_flg, proc_flg_syns, index_all_flg
+
+    def extract_final_txt(self, file_final_txt, out_dir):
+        """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
+        dcts = []
+        with open(file_final_txt, 'r', encoding='utf-8') as fr:
+            text = fr.read()
+            # 1.提取 index_all
+            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
+            for t in pat_index.findall(text):
+                dct = {
+                    "id": t[0],
+                    "name": t[1],
+                    "page": int(t[2])
+                }
+                dcts.append(dct)
+            # 2.提取 syns, 并同时输出 syns.txt
+            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for t in pat_syn.findall(text):
+                    fw.write(f'{t[0]}\t{t[1]}\n')
+        # 整理 index, 输出 index_all.txt
+        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
+        with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
+            for dct in dcts:
+                if dct["page"] == 0:
+                    fw.write(f'{dct["name"]}\t\n')
+                else:
+                    fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
+        return True

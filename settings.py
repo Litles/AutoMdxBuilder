@@ -3,7 +3,7 @@
 # @Date    : 2023-07-13 19:50:34
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.3
+# @Version : 1.4
 
 class Settings:
     """ 词典设置 """
@@ -31,6 +31,7 @@ class Settings:
         ]
 
         # ==== 以下设置不需要更改 ====
+        self.version = '1.4'
         # 输入文件
         self.dir_input = 'raw'  # [根目录] 模板 A,B,C,D 必要
         self.dname_imgs = 'imgs'  # 模板 A,B 必要目录

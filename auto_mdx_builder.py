@@ -3,7 +3,7 @@
 # @Date    : 2023-07-13 19:49:50
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.3
+# @Version : 1.4
 
 import os
 import re
@@ -147,31 +147,14 @@ class AutoMdxBuilder:
                 done_flg = self._build_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
                 if done_flg:
                     print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
+        elif sel == 31:
+            mfile = input("请输入模板A词典的 mdx/mdd 文件路径: ").strip('"')
+            self.imgdicta = ImgDictAtmpl()
+            self._restore_raw(mfile, self.imgdicta.extract_final_txt)
         elif sel == 32:
             mfile = input("请输入模板B词典的 mdx/mdd 文件路径: ").strip('"')
-            if os.path.isfile(mfile) and (mfile.endswith('.mdx') or mfile.endswith('.mdd')):
-                # 准备输出文件夹
-                out_dir = os.path.splitext(mfile)[0] + '_raw'
-                if os.path.exists(out_dir):
-                    shutil.rmtree(out_dir)
-                # 开始处理
-                if mfile.endswith('.mdx'):
-                    self._extract_btempl_mdx(mfile, out_dir)
-                    file_mdd = os.path.splitext(mfile)[0] + '.mdd'
-                    if os.path.isfile(file_mdd):
-                        os.system(f'mdict -x "{file_mdd}" -d "{os.path.join(out_dir, "imgs")}"')
-                    else:
-                        print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs 文件夹")
-                else:
-                    os.system(f'mdict -x "{mfile}" -d "{os.path.join(out_dir, "imgs")}"')
-                    file_mdx = os.path.splitext(mfile)[0] + '.mdx'
-                    if os.path.isfile(file_mdx):
-                        self._extract_btempl_mdx(file_mdx, out_dir)
-                    else:
-                        print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdx 文件, 将不会生成 .txt 文件")
-                print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
-            else:
-                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+            self.imgdictb = ImgDictBtmpl()
+            self._restore_raw(mfile, self.imgdictb.extract_final_txt)
         elif sel == 41:
             file_index_all = input("请输入 index_all.txt 的文件路径: ").strip('"')
             file_toc_all = os.path.join(os.path.split(file_index_all)[0], 'toc_all.txt')
@@ -342,56 +325,53 @@ class AutoMdxBuilder:
                 os.system(f'mdict -a "{dir_data}" "{ftitle}.mdd"')
         return done_flg
 
-    def _extract_btempl_mdx(self, mfile, out_dir):
-        """ 从模板B词典的 mdx 文件中提取资料 """
+    def _restore_raw(self, mfile, func_extract_mdx):
+        """ 将词典还原为原材料 """
+        if os.path.isfile(mfile) and (mfile.endswith('.mdx') or mfile.endswith('.mdd')):
+            # 准备输出文件夹
+            out_dir = os.path.splitext(mfile)[0] + '_raw'
+            if os.path.exists(out_dir):
+                shutil.rmtree(out_dir)
+            # 开始处理
+            if mfile.endswith('.mdx'):
+                self._extract_mdx(mfile, out_dir, func_extract_mdx)
+                file_mdd = os.path.splitext(mfile)[0] + '.mdd'
+                if os.path.isfile(file_mdd):
+                    os.system(f'mdict -x "{file_mdd}" -d "{os.path.join(out_dir, "imgs")}"')
+                else:
+                    print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs 文件夹")
+            else:
+                os.system(f'mdict -x "{mfile}" -d "{os.path.join(out_dir, "imgs")}"')
+                file_mdx = os.path.splitext(mfile)[0] + '.mdx'
+                if os.path.isfile(file_mdx):
+                    self._extract_mdx(file_mdx, out_dir, func_extract_mdx)
+                else:
+                    print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdx 文件, 将不会生成 txt/html 文件")
+            print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
+        else:
+            print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+
+    def _extract_mdx(self, mfile, out_dir, func_extract_mdx):
+        """ 从模板A词典的 mdx 文件中提取资料 """
         # 解压 mdx 文件
         os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
         # 开始提取
         for fname in os.listdir(out_dir):
             fp = os.path.join(out_dir, fname)
             if fp.endswith('.mdx.txt'):
-                # 提取 index_all, syns 信息
-                if self._extract_final_txt(fp, out_dir):
+                # 提取 index, index_all, syns 等信息
+                if func_extract_mdx(fp, out_dir):
                     os.remove(fp)
             elif fp.endswith('.mdx.description.html'):
                 # 获取 info 信息
                 with open(fp, 'r+', encoding='utf-8') as fr:
-                    text = re.sub(r'\n<div><br/>built with AMB[^<]*?<br/></div>', '', fr.read(), flags=re.I)
+                    text = re.sub(r'\n<div><br/>built with AutoMdxBuilder[^<]*?<br/></div>', '', fr.read(), flags=re.I)
                     fr.seek(0)
                     fr.truncate()
                     fr.write(text)
                 os.rename(fp, os.path.join(out_dir, 'info.html'))
             else:
                 pass
-
-    def _extract_final_txt(self, file_final_txt, out_dir):
-        """ 从源 txt 文本中提取 index_all, syns 信息 """
-        dcts = []
-        with open(file_final_txt, 'r', encoding='utf-8') as fr:
-            text = fr.read()
-            # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
-            for t in pat_index.findall(text):
-                dct = {
-                    "id": t[0],
-                    "name": t[1],
-                    "page": int(t[2])
-                }
-                dcts.append(dct)
-            # 2.提取 syns, 并同时输出 syns.txt
-            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
-            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in pat_syn.findall(text):
-                    fw.write(f'{t[0]}\t{t[1]}\n')
-        # 整理 index, 输出 index_all.txt
-        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
-        with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
-            for dct in dcts:
-                if dct["page"] == 0:
-                    fw.write(f'{dct["name"]}\t\n')
-                else:
-                    fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
-        return True
 
 
 def print_menu():
@@ -406,8 +386,8 @@ def print_menu():
     print(Fore.CYAN + "  22" + Fore.RESET + ".制作图像词典 (模板B)")
     print(Fore.CYAN + "  23" + Fore.RESET + ".制作文本词典 (模板C)")
     print(Fore.CYAN + "  24" + Fore.RESET + ".制作文本词典 (模板D)")
-    print("\n(三) 还原词典")
-    # print(Fore.CYAN + "  31" + Fore.RESET + ".将图像词典（模板A）还原为原材料")
+    print("\n(三) 还原词典" + Fore.YELLOW + " (仅支持还原 AutoMdxBuilder 1.4 以上版本制作的词典)")
+    print(Fore.CYAN + "  31" + Fore.RESET + ".将图像词典（模板A）还原为原材料")
     print(Fore.CYAN + "  32" + Fore.RESET + ".将图像词典（模板B）还原为原材料")
     print("\n(四) 其他")
     print(Fore.CYAN + "  41" + Fore.RESET + ".将 index_all.txt 处理成 toc_all.txt 文件")
