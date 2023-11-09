@@ -6,7 +6,8 @@
 # @Version : 1.4
 
 import os
-import tomllib
+from tomllib import load
+from tomlkit import loads
 from colorama import init, Fore
 
 class Settings:
@@ -39,8 +40,9 @@ class Settings:
         # 其他文件
         self.fname_toc_all = 'toc_all.txt'
 
-        # 预设 css 样式
+        # 预设样式/模板
         self.dir_lib = 'lib'
+        self.build_tmpl = 'build.toml'
         self.css_atmpl = 'atmpl.css'
         self.css_btmpl = 'btmpl.css'
         self.css_ctmpl = 'ctmpl.css'
@@ -53,7 +55,7 @@ class Settings:
         self.dir_input = os.path.split(file_toml)[0]
         with open(file_toml, 'rb') as fr:
             try:
-                build = tomllib.load(fr)
+                build = load(fr)
                 # 通用设置
                 self.name = build["global"]["name"]  # 书名
                 self.name_abbr = build["global"]["name_abbr"]  # 书名首字母缩写
@@ -76,4 +78,8 @@ class Settings:
                 build_flg = True
             except:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "读取 build.toml 文件失败, 请检查格式是否规范、选项是否遗漏")
+        # 生成 TOML 对象
+        if build_flg:
+            with open(file_toml, 'r', encoding='utf-8') as fr:
+                self.build = loads(fr.read())
         return build_flg

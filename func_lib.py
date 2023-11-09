@@ -212,7 +212,7 @@ class FuncLib():
             os.rename(file_tmp, file_final)
         return entry_total
 
-    def generate_info_html(self, dict_name, file_info_raw, entry_total, p_total):
+    def generate_info_html(self, dict_name, file_info_raw, templ_choice):
         # 创建好临时文件夹
         if not os.path.exists(self.settings.dir_output_tmp):
             os.makedirs(self.settings.dir_output_tmp)
@@ -224,15 +224,10 @@ class FuncLib():
             if file_info_raw and os.path.exists(file_info_raw):
                 with open(file_info_raw, 'r', encoding='utf-8') as fr:
                     fw.write(fr.read())
-                fw.write(f"\n<div><br/>built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
+            if templ_choice:
+                fw.write(f"\n<div><br/>{dict_name}, built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}, based on template {templ_choice.upper()}.<br/></div>\n")
             else:
-                print(Fore.YELLOW + "INFO: " + Fore.RESET + f"未找到描述文件, 将生成默认词典描述")
-                fw.write(f"<div>Name: {dict_name}</div>\n")
-                # 写词条数, 页码数
-                if p_total != 0:
-                    fw.write(f"<div>Pages: {p_total}</div>\n")
-                fw.write(f"<div>Entries: {entry_total}</div>\n")
-                fw.write(f"<div><br/>built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}<br/></div>\n")
+                fw.write(f"\n<div><br/>{dict_name}, packed with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}.<br/></div>\n")
         return file_info
 
     def get_item_list(self, dct):

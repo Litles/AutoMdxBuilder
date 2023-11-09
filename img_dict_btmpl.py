@@ -7,6 +7,7 @@
 
 import os
 import re
+from tomlkit import dumps
 from colorama import init, Fore, Back, Style
 from func_lib import FuncLib
 
@@ -71,7 +72,7 @@ class ImgDictBtmpl:
             os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, p_total)
+            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, 'B')
             return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
@@ -96,6 +97,19 @@ class ImgDictBtmpl:
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
                 for t in pat_syn.findall(text):
                     fw.write(f'{t[0]}\t{t[1]}\n')
+            # 3.识别 name_abbr, body_start
+            body_start = 1
+            names = []
+            for m in re.findall(r'^([A-Z|\d]+)_A(\d+)[\r\n]+<link rel="stylesheet"', text, flags=re.M+re.I):
+                if m[0].upper() not in names:
+                    names.append(m[0].upper())
+                if int(m[1])+1 > body_start:
+                    body_start = int(m[1])+1
+            if len(names) > 0:
+                name_abbr = names[0]
+            else:
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
+                name_abbr = 'XXXXCD'
         # 整理 index, 输出 index_all.txt
         dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
@@ -105,6 +119,14 @@ class ImgDictBtmpl:
                 else:
                     fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
         # 输出 build.toml 文件
+        self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
+        self.settings.build["global"]["templ_choice"] = "b"
+        self.settings.build["global"]["name"] = os.path.split(file_final_txt)[1].split('.')[0]
+        self.settings.build["global"]["name_abbr"] = name_abbr
+        self.settings.build["template"]["b"]["body_start"] = body_start
+        with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
+            fw.write(dumps(self.settings.build))
+        os.remove(file_final_txt)
         return True
 
     def _make_entries_with_navi(self, imgs, file_index_all, file_out):

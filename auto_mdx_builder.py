@@ -31,8 +31,8 @@ class AutoMdxBuilder:
         elif sel == 2:
             file_final_txt = input("请输入要打包的 txt 文件路径: ").strip('"')
             if self.func.text_file_check(file_final_txt) == 2:
-                # 读取词条数
-                entry_total = self.func.merge_and_count([file_final_txt], file_final_txt)
+                # # 读取词条数
+                # entry_total = self.func.merge_and_count([file_final_txt], file_final_txt)
                 # 检查数据文件夹
                 dir_curr, fname_txt = os.path.split(file_final_txt)
                 dir_data = os.path.join(dir_curr, 'data')
@@ -50,7 +50,7 @@ class AutoMdxBuilder:
                     elif fname.endswith('.html') and fname.startswith(os.path.splitext(fname_txt)[0]):
                         file_info_raw = os.path.join(dir_curr, fname)
                         break
-                file_dict_info = self.func.generate_info_html(os.path.splitext(fname_txt)[0], file_info_raw, entry_total, 0)
+                file_dict_info = self.func.generate_info_html(os.path.splitext(fname_txt)[0], file_info_raw, None)
                 # 打包
                 print('\n------------------\n开始打包……\n')
                 done_flg = self._pack_to_mdict(file_final_txt, file_dict_info, dir_data, dir_curr)
@@ -81,36 +81,20 @@ class AutoMdxBuilder:
                     print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 build.toml 文件")
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
-        elif sel == 31:
-            p = input("请输入模板 A 词典的文件夹或 mdx/mdd 文件路径: ").strip('"/\\')
-            if os.path.splitext(p)[1] in ('.mdx', '.mdd'):
-                self._restore_raw(p, ImgDictAtmpl(self).extract_final_txt, False)
+        elif sel == 30:
+            p = input("请输入词典的文件夹或 mdx/mdd 文件路径: ").strip('"/\\')
+            if os.path.isfile(p) and os.path.splitext(p)[1] == '.mdx':
+                self._restore_raw(p, False)
+            elif os.path.isfile(p) and os.path.splitext(p)[1] == '.mdd':
+                if os.path.isfile(p[:-1]+'x'):
+                    self._restore_raw(p[:-1]+'x', False)
             elif os.path.isdir(p):
-                mfile = None
                 for m in os.listdir(p):
-                    if m.endswith('.mdx') or m.endswith('.mdd'):
-                        mfile = os.path.join(p, m)
+                    if m.endswith('.mdx'):
+                        self._restore_raw(os.path.join(p, m), True)
                         break
-                if mfile:
-                    self._restore_raw(mfile, ImgDictAtmpl(self).extract_final_txt, True)
                 else:
-                    print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 mdx/mdd 文件")
-            else:
-                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
-        elif sel == 32:
-            p = input("请输入模板 B 词典的文件夹或 mdx/mdd 文件路径: ").strip('"/\\')
-            if os.path.splitext(p)[1] in ('.mdx', '.mdd'):
-                self._restore_raw(p, ImgDictBtmpl(self).extract_final_txt, False)
-            elif os.path.isdir(p):
-                mfile = None
-                for m in os.listdir(p):
-                    if m.endswith('.mdx') or m.endswith('.mdd'):
-                        mfile = os.path.join(p, m)
-                        break
-                if mfile:
-                    self._restore_raw(mfile, ImgDictBtmpl(self).extract_final_txt, True)
-                else:
-                    print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 mdx/mdd 文件")
+                    print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 mdx 文件")
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 41:
@@ -360,57 +344,64 @@ class AutoMdxBuilder:
                 os.system(f'mdict -a "{dir_data}" "{ftitle}.mdd"')
         return done_flg
 
-    def _restore_raw(self, mfile, func_extract_mdx, outside_flg):
+    def _restore_raw(self, xfile, outside_flg):
         """ 将词典还原为原材料 """
-        if os.path.isfile(mfile) and (mfile.endswith('.mdx') or mfile.endswith('.mdd')):
-            # 准备输出文件夹
-            dir_input, fname = os.path.split(mfile)
-            if outside_flg:
-                out_dir = os.path.join(os.path.split(dir_input)[0], fname.split('.')[0]) + '_amb'
-            else:
-                out_dir = os.path.splitext(mfile)[0] + '_amb'
-            if os.path.exists(out_dir):
-                shutil.rmtree(out_dir)
-            # 开始处理
-            if mfile.endswith('.mdx'):
-                self._extract_mdx(mfile, out_dir, func_extract_mdx)
-                file_mdd = os.path.splitext(mfile)[0] + '.mdd'
-                if os.path.isfile(file_mdd):
-                    os.system(f'mdict -x "{file_mdd}" -d "{os.path.join(out_dir, "imgs")}"')
-                else:
-                    print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs 文件夹")
-            else:
-                os.system(f'mdict -x "{mfile}" -d "{os.path.join(out_dir, "imgs")}"')
-                file_mdx = os.path.splitext(mfile)[0] + '.mdx'
-                if os.path.isfile(file_mdx):
-                    self._extract_mdx(file_mdx, out_dir, func_extract_mdx)
-                else:
-                    print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdx 文件, 将不会生成 txt/html 文件")
-            print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
+        extract_flg = False
+        dict_name = None
+        templ_choice = None
+        # 1.准备输出文件夹
+        dir_input, fname = os.path.split(xfile)
+        if outside_flg:
+            out_dir = os.path.join(os.path.split(dir_input)[0], fname.split('.')[0]) + '_amb'
         else:
-            print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
-
-    def _extract_mdx(self, mfile, out_dir, func_extract_mdx):
-        """ 从模板A词典的 mdx 文件中提取资料 """
-        # 解压 mdx 文件
-        os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
-        # 开始提取
+            out_dir = os.path.splitext(xfile)[0] + '_amb'
+        if os.path.exists(out_dir):
+            shutil.rmtree(out_dir)
+        # 2.分析 mdx 文件
+        os.system(f'mdict -x "{xfile}" -d "{out_dir}"')
+        # 分析 info 信息, 确定是否支持还原
         for fname in os.listdir(out_dir):
             fp = os.path.join(out_dir, fname)
-            if fp.endswith('.mdx.txt'):
-                # 提取 index, index_all, syns 等信息
-                if func_extract_mdx(fp, out_dir):
-                    os.remove(fp)
-            elif fp.endswith('.mdx.description.html'):
-                # 获取 info 信息
+            text = None
+            if fp.endswith('.mdx.description.html'):
                 with open(fp, 'r+', encoding='utf-8') as fr:
-                    text = re.sub(r'\n<div><br/>built with AutoMdxBuilder[^<]*?<br/></div>', '', fr.read(), flags=re.I)
-                    fr.seek(0)
-                    fr.truncate()
-                    fr.write(text)
-                os.rename(fp, os.path.join(out_dir, 'info.html'))
+                    pat = re.compile(r'\n<div><br/>([^><]*?), built with AutoMdxBuilder[^><]*?based on template ([A-D])\.<br/></div>', flags=re.I)
+                    text = fr.read()
+                    if pat.search(text):
+                        # 符合条件, 支持还原
+                        dict_name = pat.search(text).group(1)
+                        templ_choice = pat.search(text).group(2)
+                        text = pat.sub('', text)
+                        extract_flg = True
+                        break
+        # 3.开始提取
+        if extract_flg:
+            # 提取 info.html
+            os.rename(fp, os.path.join(out_dir, 'info.html'))
+            with open(os.path.join(out_dir, 'info.html'), 'w', encoding='utf-8') as fw:
+                fw.write(text)
+            # 提取 index, index_all, syns 等信息
+            for fname in os.listdir(out_dir):
+                fp = os.path.join(out_dir, fname)
+                if fp.endswith('.mdx.txt'):
+                    # 选择函数进行处理
+                    if templ_choice == 'A':
+                        ImgDictAtmpl(self).extract_final_txt(fp, out_dir)
+                    elif templ_choice == 'B':
+                        ImgDictBtmpl(self).extract_final_txt(fp, out_dir)
+                    elif templ_choice == 'C':
+                        TextDictCtmpl(self).extract_final_txt(fp, out_dir)
+                    elif templ_choice == 'D':
+                        TextDictDtmpl(self).extract_final_txt(fp, out_dir)
+            # 处理 mdd
+            file_mdd = os.path.splitext(xfile)[0] + '.mdd'
+            if os.path.isfile(file_mdd):
+                os.system(f'mdict -x "{file_mdd}" -d "{os.path.join(out_dir, "imgs")}"')
             else:
-                pass
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs 文件夹")
+            print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
+        else:
+            print(Fore.RED + "ERROR: " + Fore.RESET + "词典并非由 AutoMdxBuilder 制作, 不支持还原")
 
 
 def print_menu():
@@ -423,8 +414,7 @@ def print_menu():
     print("\n(二) 制作词典" + Fore.YELLOW + " (需提供原材料)")
     print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典")
     print("\n(三) 还原词典" + Fore.YELLOW + " (仅支持还原 AutoMdxBuilder 1.4 以上版本制作的词典)")
-    print(Fore.CYAN + "  31" + Fore.RESET + ".将图像词典（模板A）还原为原材料")
-    print(Fore.CYAN + "  32" + Fore.RESET + ".将图像词典（模板B）还原为原材料")
+    print(Fore.CYAN + "  30" + Fore.RESET + ".还原词典")
     print("\n(四) 其他")
     print(Fore.CYAN + "  41" + Fore.RESET + ".将 index_all.txt 处理成 toc_all.txt 文件")
     print(Fore.CYAN + "  42" + Fore.RESET + ".将 toc_all.txt 处理成 index_all.txt 文件")

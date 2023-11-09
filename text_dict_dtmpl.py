@@ -61,7 +61,7 @@ class TextDictDtmpl:
             os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, 0)
+            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, 'D')
             return self.proc_flg, file_final_txt, file_dict_info
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")

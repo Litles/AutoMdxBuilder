@@ -7,6 +7,7 @@
 
 import os
 import re
+from tomlkit import dumps, loads, array, comment, nl
 from colorama import init, Fore, Back, Style
 from func_lib import FuncLib
 
@@ -71,7 +72,7 @@ class ImgDictAtmpl:
             os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, entry_total, p_total)
+            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, 'A')
             return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
@@ -79,17 +80,29 @@ class ImgDictAtmpl:
 
     def extract_final_txt(self, file_final_txt, out_dir):
         """ 从模板A词典的源 txt 文本中提取 index, toc, syns 信息 """
+        # 1.提取信息
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
-            # 0.识别正文起始页数
-            name_abbr = ''
+            # 识别 name_abbr, body_start
             body_start = 1
+            names = []
             for m in re.findall(r'^<div class="main-img"><img src="/([A-Z|\d]+)_A(\d+)\.\w+"></div>$', text, flags=re.M+re.I):
-                if int(m[1]) > body_start:
-                    body_start = int(m[1])
-                name_abbr = m[0].upper()
-            body_start = body_start + 1
-            # 1.提取 index, toc, syns
+                if int(m[1])+1 > body_start:
+                    body_start = int(m[1])+1
+                if m[0].upper() not in names:
+                    names.append(m[0].upper())
+            if len(names) > 0:
+                name_abbr = names[0]
+            else:
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
+                name_abbr = 'XXXXCD'
+            # 提取 navi_items
+            navi_items = array()
+            top_navi = re.search(r'^<div class="top-navi">(.*?)</div>$', text, flags=re.M+re.I)
+            for m in re.findall(r'<span class="navi-item"><a href="entry://[A-Z|\d]+_([^">]+)">([^<]+)</a></span>', top_navi[1], flags=re.I):
+                if m[1] != '🕮':
+                    navi_items.add_line({"a": m[1], "ref": m[0]})
+            # 提取 index, toc, syns
             index = []
             toc = []
             syns = []
@@ -112,31 +125,48 @@ class ImgDictAtmpl:
                         index.append(dct)
                 else:
                     syns.append((m[0], m[1]))
-            # 2.整理提取结果
-            # (a) index.txt
-            if len(index) != 0:
-                index.sort(key=lambda x: x["page"], reverse=False)
-                with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
-                    for d in index:
-                        fw.write(f'{d["name"]}\t{str(d["page"])}\n')
-            # (b) toc.txt
-            if len(toc) != 0:
-                with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
-                    # 获取TOC总目录词条
-                    toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
-                    if toc_entry:
-                        for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M+re.I):
-                            p = 0
-                            for d in toc:
-                                if m[1] == d["name"]:
-                                    p = d["page"]
-                                    break
-                            fw.write(f'{m[0]}{m[1]}\t{str(p)}\n')
-            # (c) syns.txt
-            if len(syns) != 0:
-                with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                    for s in syns:
-                        fw.write(f'{s[0]}\t{s[1]}\n')
+        # 2.整理提取结果
+        # (a) index.txt
+        if len(index) != 0:
+            index.sort(key=lambda x: x["page"], reverse=False)
+            with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
+                for d in index:
+                    fw.write(f'{d["name"]}\t{str(d["page"])}\n')
+        # (b) toc.txt
+        if len(toc) != 0:
+            with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
+                # 获取TOC总目录词条
+                toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
+                if toc_entry:
+                    for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M+re.I):
+                        p = 0
+                        for d in toc:
+                            if m[1] == d["name"]:
+                                p = d["page"]
+                                break
+                        fw.write(f'{m[0]}{m[1]}\t{str(p)}\n')
+        # (c) syns.txt
+        if len(syns) != 0:
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for s in syns:
+                    fw.write(f'{s[0]}\t{s[1]}\n')
+        # (d) build.toml
+        self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
+        self.settings.build["global"]["templ_choice"] = "a"
+        self.settings.build["global"]["name"] = os.path.split(file_final_txt)[1].split('.')[0]
+        self.settings.build["global"]["name_abbr"] = name_abbr
+        self.settings.build["template"]["a"]["body_start"] = body_start
+        if len(navi_items) > 0:
+            build_str = re.sub(r'[\r\n]+#navi_items = \[.*?#\][^\r\n]*?', '', dumps(self.settings.build), flags=re.S+re.I)
+            build_str = re.sub(r'[\r\n]+#\s*?（可选）导航栏链接.+$', '', build_str, flags=re.M+re.I)
+            self.settings.build = loads(build_str)
+            self.settings.build["template"]["a"].add(comment("（可选）导航栏链接, 有目录 (toc.txt) 就可以设置"))
+            self.settings.build["template"]["a"].add("navi_items", navi_items.multiline(True))
+            self.settings.build["template"]["a"].add(nl())
+            self.settings.build["template"]["a"].add(nl())
+        with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
+            fw.write(dumps(self.settings.build))
+        os.remove(file_final_txt)
         return True
 
     def _check_raw_files(self):
