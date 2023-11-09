@@ -8,20 +8,20 @@
 import os
 import re
 from colorama import init, Fore, Back, Style
-from settings import Settings
 from func_lib import FuncLib
 
 
 class TextDictCtmpl:
     """ 文本词典（模板C） """
-    def __init__(self):
-        self.settings = Settings()
-        self.func = FuncLib()
-        # 初始化, 检查原材料
-        self.proc_flg, self.proc_flg_syns = self._check_raw_files()
+    def __init__(self, amb):
+        self.settings = amb.settings
+        self.func = FuncLib(amb)
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
+        # 初始化, 检查原材料
+        self.proc_flg, self.proc_flg_syns = self._check_raw_files()
+        # 开始制作
         if self.proc_flg:
             print('\n材料检查通过, 开始制作词典……\n')
             # 创建临时输出目录, 并清空目录下所有文件
@@ -56,7 +56,7 @@ class TextDictCtmpl:
             entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
             print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # 生成 css 文件
-            file_css = os.path.join(self.settings.dir_css, self.settings.css_ctmpl)
+            file_css = os.path.join(self.settings.dir_lib, self.settings.css_ctmpl)
             file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
             os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html

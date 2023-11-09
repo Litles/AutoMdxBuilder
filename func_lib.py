@@ -7,17 +7,17 @@
 
 import os
 import re
+import shutil
 from datetime import datetime
 import chardet
 from colorama import init, Fore, Back, Style
 import opencc
-from settings import Settings
 
 
 class FuncLib():
     """ functions for usage """
-    def __init__(self):
-        self.settings = Settings()
+    def __init__(self, amb):
+        self.settings = amb.settings
 
     def make_entries_img(self, proc_flg_toc, file_out):
         """ (一) 生成图像词条 """
@@ -417,12 +417,10 @@ class FuncLib():
                 pass
             elif size_out == size_in:
                 copy_flg = False
-            # 有非空且不一样, 先清空
+            # 有非空且不一样, 清空以重新处理
             else:
-                for fname in os.listdir(dir_imgs_out):
-                    fpath = os.path.join(dir_imgs_out, fname)
-                    if os.path.isfile(fpath):
-                        os.remove(fpath)
+                shutil.rmtree(dir_imgs_out)
+                os.makedirs(dir_imgs_out)
         else:
             os.makedirs(dir_imgs_out)
         # 获取图像文件列表

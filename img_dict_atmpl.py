@@ -8,20 +8,20 @@
 import os
 import re
 from colorama import init, Fore, Back, Style
-from settings import Settings
 from func_lib import FuncLib
 
 
 class ImgDictAtmpl:
     """ 图像词典（模板A） """
-    def __init__(self):
-        self.settings = Settings()
-        self.func = FuncLib()
-        # 初始化, 检查原材料
-        self.proc_flg, self.proc_flg_toc, self.proc_flg_syns = self._check_raw_files()
+    def __init__(self, amb):
+        self.settings = amb.settings
+        self.func = FuncLib(amb)
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
+        # 检查原材料
+        self.proc_flg, self.proc_flg_toc, self.proc_flg_syns = self._check_raw_files()
+        # 开始制作
         if self.proc_flg:
             print('\n材料检查通过, 开始制作词典……\n')
             # 创建临时输出目录, 清空目录下所有文件
@@ -66,7 +66,7 @@ class ImgDictAtmpl:
             entry_total = self.func.merge_and_count([file_1, file_2, file_3, file_4, file_5], file_final_txt)
             print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # 生成 css 文件
-            file_css = os.path.join(self.settings.dir_css, self.settings.css_atmpl)
+            file_css = os.path.join(self.settings.dir_lib, self.settings.css_atmpl)
             file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
             os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
@@ -76,6 +76,68 @@ class ImgDictAtmpl:
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None, None
+
+    def extract_final_txt(self, file_final_txt, out_dir):
+        """ 从模板A词典的源 txt 文本中提取 index, toc, syns 信息 """
+        with open(file_final_txt, 'r', encoding='utf-8') as fr:
+            text = fr.read()
+            # 0.识别正文起始页数
+            name_abbr = ''
+            body_start = 1
+            for m in re.findall(r'^<div class="main-img"><img src="/([A-Z|\d]+)_A(\d+)\.\w+"></div>$', text, flags=re.M+re.I):
+                if int(m[1]) > body_start:
+                    body_start = int(m[1])
+                name_abbr = m[0].upper()
+            body_start = body_start + 1
+            # 1.提取 index, toc, syns
+            index = []
+            toc = []
+            syns = []
+            for m in re.findall(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', text, flags=re.M+re.I):
+                # 区分: 索引, 目录, 同义词
+                dct = {}
+                if m[1].startswith(name_abbr+'_'):
+                    # 获取页码
+                    n = len(name_abbr) + 2
+                    if m[1].startswith(name_abbr+'_A'):
+                        dct["page"] = int(m[1][n:]) - body_start
+                    else:
+                        dct["page"] = int(m[1][n:])
+                    # 区分目录和索引
+                    if m[0].startswith(name_abbr+'_'):
+                        dct["name"] = m[0][n-1:]
+                        toc.append(dct)
+                    else:
+                        dct["name"] = m[0]
+                        index.append(dct)
+                else:
+                    syns.append((m[0], m[1]))
+            # 2.整理提取结果
+            # (a) index.txt
+            if len(index) != 0:
+                index.sort(key=lambda x: x["page"], reverse=False)
+                with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
+                    for d in index:
+                        fw.write(f'{d["name"]}\t{str(d["page"])}\n')
+            # (b) toc.txt
+            if len(toc) != 0:
+                with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
+                    # 获取TOC总目录词条
+                    toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
+                    if toc_entry:
+                        for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M+re.I):
+                            p = 0
+                            for d in toc:
+                                if m[1] == d["name"]:
+                                    p = d["page"]
+                                    break
+                            fw.write(f'{m[0]}{m[1]}\t{str(p)}\n')
+            # (c) syns.txt
+            if len(syns) != 0:
+                with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                    for s in syns:
+                        fw.write(f'{s[0]}\t{s[1]}\n')
+        return True
 
     def _check_raw_files(self):
         """ 检查原材料
@@ -227,65 +289,3 @@ class ImgDictAtmpl:
                         fw.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={self.settings.name_abbr}_B{str(pair["page"]).zfill(n_len)}\n</>\n')
                     words.append(pair["title"])
         return words
-
-    def extract_final_txt(self, file_final_txt, out_dir):
-        """ 从模板A词典的源 txt 文本中提取 index, toc, syns 信息 """
-        with open(file_final_txt, 'r', encoding='utf-8') as fr:
-            text = fr.read()
-            # 0.识别正文起始页数
-            name_abbr = ''
-            body_start = 1
-            for m in re.findall(r'^<div class="main-img"><img src="/([A-Z|\d]+)_A(\d+)\.\w+"></div>$', text, flags=re.M+re.I):
-                if int(m[1]) > body_start:
-                    body_start = int(m[1])
-                name_abbr = m[0].upper()
-            body_start = body_start + 1
-            # 1.提取 index, toc, syns
-            index = []
-            toc = []
-            syns = []
-            for m in re.findall(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', text, flags=re.M+re.I):
-                # 区分: 索引, 目录, 同义词
-                dct = {}
-                if m[1].startswith(name_abbr+'_'):
-                    # 获取页码
-                    n = len(name_abbr) + 2
-                    if m[1].startswith(name_abbr+'_A'):
-                        dct["page"] = int(m[1][n:]) - body_start
-                    else:
-                        dct["page"] = int(m[1][n:])
-                    # 区分目录和索引
-                    if m[0].startswith(name_abbr+'_'):
-                        dct["name"] = m[0][n-1:]
-                        toc.append(dct)
-                    else:
-                        dct["name"] = m[0]
-                        index.append(dct)
-                else:
-                    syns.append((m[0], m[1]))
-            # 2.整理提取结果
-            # (a) index.txt
-            if len(index) != 0:
-                index.sort(key=lambda x: x["page"], reverse=False)
-                with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
-                    for d in index:
-                        fw.write(f'{d["name"]}\t{str(d["page"])}\n')
-            # (b) toc.txt
-            if len(toc) != 0:
-                with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
-                    # 获取TOC总目录词条
-                    toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
-                    if toc_entry:
-                        for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M+re.I):
-                            p = 0
-                            for d in toc:
-                                if m[1] == d["name"]:
-                                    p = d["page"]
-                                    break
-                            fw.write(f'{m[0]}{m[1]}\t{str(p)}\n')
-            # (c) syns.txt
-            if len(syns) != 0:
-                with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                    for s in syns:
-                        fw.write(f'{s[0]}\t{s[1]}\n')
-        return True

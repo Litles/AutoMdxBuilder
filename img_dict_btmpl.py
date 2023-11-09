@@ -8,20 +8,20 @@
 import os
 import re
 from colorama import init, Fore, Back, Style
-from settings import Settings
 from func_lib import FuncLib
 
 
 class ImgDictBtmpl:
     """ 图像词典（模板B） """
-    def __init__(self):
-        self.settings = Settings()
-        self.func = FuncLib()
-        # 初始化, 检查原材料
-        self.proc_flg, self.proc_flg_syns, self.index_all_flg = self._check_raw_files()
+    def __init__(self, amb):
+        self.settings = amb.settings
+        self.func = FuncLib(amb)
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
+        # 初始化, 检查原材料
+        self.proc_flg, self.proc_flg_syns, self.index_all_flg = self._check_raw_files()
+        # 开始制作
         if self.proc_flg:
             print('\n材料检查通过, 开始制作词典……\n')
             # 创建临时输出目录, 并清空目录下所有文件
@@ -66,7 +66,7 @@ class ImgDictBtmpl:
             entry_total = self.func.merge_and_count([file_1, file_2, file_3, file_4], file_final_txt)
             print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # 生成 css 文件
-            file_css = os.path.join(self.settings.dir_css, self.settings.css_btmpl)
+            file_css = os.path.join(self.settings.dir_lib, self.settings.css_btmpl)
             file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
             os.system(f'copy /y "{file_css}" "{file_css_out}"')
             # 生成 info.html
@@ -76,6 +76,36 @@ class ImgDictBtmpl:
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None, None
+
+    def extract_final_txt(self, file_final_txt, out_dir):
+        """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
+        dcts = []
+        with open(file_final_txt, 'r', encoding='utf-8') as fr:
+            text = fr.read()
+            # 1.提取 index_all
+            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
+            for t in pat_index.findall(text):
+                dct = {
+                    "id": t[0],
+                    "name": t[1],
+                    "page": int(t[2])
+                }
+                dcts.append(dct)
+            # 2.提取 syns, 并同时输出 syns.txt
+            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for t in pat_syn.findall(text):
+                    fw.write(f'{t[0]}\t{t[1]}\n')
+        # 整理 index, 输出 index_all.txt
+        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
+        with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
+            for dct in dcts:
+                if dct["page"] == 0:
+                    fw.write(f'{dct["name"]}\t\n')
+                else:
+                    fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
+        # 输出 build.toml 文件
+        return True
 
     def _make_entries_with_navi(self, imgs, file_index_all, file_out):
         """ (二) 生成主体词条, 带层级导航 """
@@ -210,32 +240,3 @@ class ImgDictBtmpl:
         if self.func.text_file_check(file_dict_info) == 1:
             proc_flg = False
         return proc_flg, proc_flg_syns, index_all_flg
-
-    def extract_final_txt(self, file_final_txt, out_dir):
-        """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
-        dcts = []
-        with open(file_final_txt, 'r', encoding='utf-8') as fr:
-            text = fr.read()
-            # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
-            for t in pat_index.findall(text):
-                dct = {
-                    "id": t[0],
-                    "name": t[1],
-                    "page": int(t[2])
-                }
-                dcts.append(dct)
-            # 2.提取 syns, 并同时输出 syns.txt
-            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
-            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in pat_syn.findall(text):
-                    fw.write(f'{t[0]}\t{t[1]}\n')
-        # 整理 index, 输出 index_all.txt
-        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
-        with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
-            for dct in dcts:
-                if dct["page"] == 0:
-                    fw.write(f'{dct["name"]}\t\n')
-                else:
-                    fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
-        return True

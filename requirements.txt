@@ -1,3 +1,4 @@
 colorama==0.4.6
+tomlkit==0.12.2
 mdict-utils==1.3.12
 OpenCC==1.1.1
