@@ -1,7 +1,7 @@
 # 词典制作的配置文件（用于 AutoMdxBuilder 1.4 版本及以上）
 
 [global]
-templ_choice = "b"  # 【重要】选择要应用的模板, 同时需完成下方对应模板的具体配置（如果有的话）
+templ_choice = "B"  # 【重要】选择要应用的模板, 同时需完成下方对应模板的具体配置（如果有的话）
 name = "文史工具书词典"  # 书名
 name_abbr = "WSGJSCD"   # 书名首字母缩写
 simp_trad_flg = false  # 是否需要繁简通搜

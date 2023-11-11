@@ -54,27 +54,48 @@ class FuncLib():
         """ 处理成 toc_all.txt 文件 """
         done_flg = True
         if self.text_file_check(file_index_all) == 2:
-            pat1 = re.compile(r'^【L(\d+)】([^\t]+\t[\-\d]+[\r\n]*)$')
-            pat2 = re.compile(r'^[^【][^\t]*\t[\-\d]+[\r\n]*$')
-            with open(file_toc_all, 'w', encoding='utf-8') as fw:
-                with open(file_index_all, 'r', encoding='utf-8') as fr:
-                    lines = fr.readlines()
-                    level = 0
-                    i = 0
-                    for line in lines:
-                        i += 1
-                        if pat1.match(line):
-                            mth = pat1.match(line)
-                            level = int(mth.group(1))
-                            fw.write('\t'*level + mth.group(2))
-                        elif pat2.match(line):
-                            fw.write('\t'*(level+1) + line)
-                        else:
-                            print(Fore.YELLOW + "INFO: " + Fore.RESET + f"第 {i} 行未匹配, 请检查")
-                            done_flg = False
-            # 如果中途失败把半成品删了
-            if not done_flg and os.path.exists(file_toc_all):
-                os.remove(file_toc_all)
+            # 读取
+            pat1 = re.compile(r'^【L(\d+)】([^\t]+)\t([\-\d]*)[\r\n]*$')
+            pat2 = re.compile(r'^([^【][^\t]*)\t([\-\d]*)[\r\n]*$')
+            dcts = []
+            with open(file_index_all, 'r', encoding='utf-8') as fr:
+                lines = fr.readlines()
+                level = 0
+                i = 0
+                for line in lines:
+                    i += 1
+                    if pat1.match(line):
+                        mth = pat1.match(line)
+                        level = int(mth.group(1))
+                        dct = {
+                            "level": level,
+                            "name": mth.group(2),
+                            "page": mth.group(3)
+                        }
+                    elif pat2.match(line):
+                        dct = {
+                            "level": level+1,
+                            "name": pat2.match(line).group(1),
+                            "page": pat2.match(line).group(2)
+                        }
+                    else:
+                        print(Fore.RED + "ERROR: " + Fore.RESET + f"第 {i} 行格式有误, 请检查")
+                        done_flg = False
+                        break
+                    dcts.append(dct)
+            # 输出
+            if done_flg:
+                with open(file_toc_all, 'w', encoding='utf-8') as fw:
+                    for x in range(len(dcts)):
+                        level = dcts[x]["level"]
+                        name = dcts[x]["name"]
+                        page = dcts[x]["page"].strip()
+                        if page == '':
+                            for d in dcts[x+1:]:
+                                if d["page"].strip() != '':
+                                    page = d["page"].strip()
+                                    break
+                        fw.write('\t'*level + name + '\t' + page + '\n')
         else:
             done_flg = False
         return done_flg
@@ -126,7 +147,7 @@ class FuncLib():
                 words.append(syn["syn"])
         return words
 
-    def toc_to_index(self, file_toc_all, file_index_all):
+    def toc_all_to_index(self, file_toc_all, file_index_all):
         """ 处理成 index_all.txt 文件 """
         done_flg = True
         if self.text_file_check(file_toc_all) == 2:
@@ -144,6 +165,18 @@ class FuncLib():
                         fw.write('【L'+str(pair["level"])+'】'+pair["title"]+'\t'+str(pair["page"])+'\n')
                     else:
                         fw.write(pair["title"]+'\t'+str(pair["page"])+'\n')
+        else:
+            done_flg = False
+        return done_flg
+
+    def toc_to_index(self, file_toc, file_index_all):
+        """ 处理成 index_all.txt 文件 """
+        done_flg = True
+        if self.text_file_check(file_toc) == 2:
+            pairs = self.read_toc_file(file_toc)
+            with open(file_index_all, 'w', encoding='utf-8') as fw:
+                for pair in pairs:
+                    fw.write('【L'+str(pair["level"])+'】'+pair["title"]+'\t'+str(pair["page"])+'\n')
         else:
             done_flg = False
         return done_flg
@@ -169,6 +202,77 @@ class FuncLib():
                     print(Fore.YELLOW + "INFO: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
                 i += 1
         return pairs
+
+    def merge_to_index_all(self, file_toc, file_index, file_index_all):
+        # 先将 toc 转成 index, 再将 index 扩展成 index_all
+        if self.toc_to_index(file_toc, file_index_all):
+            pat = re.compile(r'^([^\t]+)\t([\-|\d]+)[\r\n]*$', flags=re.I)
+            # 1.读取 toc
+            toc = []
+            with open(file_index_all, 'r', encoding='utf-8') as fr:
+                i = 1
+                for line in fr.readlines():
+                    if pat.match(line):
+                        toc.append({"name": pat.match(line).group(1), "page": int(pat.match(line).group(2))})
+                    else:
+                        print(Fore.YELLOW + "WARN: " + Fore.RESET + f"toc.txt 文件的第 {i} 行未识别, 已过滤")
+                    i = i + 1
+            # 2.读取 index
+            index = []
+            with open(file_index, 'r', encoding='utf-8') as fr:
+                j = 1
+                p_last = -100000
+                mess_flg = False
+                for line in fr.readlines():
+                    mth = pat.match(line)
+                    if mth:
+                        index.append({"name": mth.group(1), "page": int(mth.group(2))})
+                        if int(mth.group(2)) < p_last:
+                            mess_flg = True
+                        p_last = int(mth.group(2))
+                    else:
+                        print(Fore.YELLOW + "WARN: " + Fore.RESET + f"index.txt 文件的第 {j} 行未识别, 已过滤")
+                    j = j + 1
+            if mess_flg:
+                index.sort(key=lambda x: x["page"], reverse=False)
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + "索引存在乱序, 已按页码重排")
+            # 3.排序合并 toc 和 index
+            toc_sub = []
+            with open(file_index_all, 'w', encoding='utf-8') as fw:
+                i = 0
+                j = 0
+                for i in range(len(toc)-1):
+                    s = f'{toc[i]["name"]}\t{str(toc[i]["page"])}\n'
+                    fw.write(s)
+                    for x in range(j, len(index)):
+                        if index[x]["page"] > toc[i]["page"] and index[x]["page"] < toc[i+1]["page"]:
+                            fw.write(f'{index[x]["name"]}\t{str(index[x]["page"])}\n')
+                            j = x + 1
+                        elif index[x]["page"] == toc[i]["page"] and index[x]["page"] < toc[i+1]["page"]:
+                            fw.write(f'{index[x]["name"]}\t{str(index[x]["page"])}\n')
+                            j = x + 1
+                            if s not in toc_sub:
+                                toc_sub.append(s)
+                        else:
+                            j = x
+                            break
+                # 补 toc 的最后一行
+                fw.write(f'{toc[-1]["name"]}\t{str(toc[-1]["page"])}\n')
+                for x in range(j, len(index)):
+                    if index[x]["page"] >= toc[i]["page"]:
+                        fw.write(f'{index[x]["name"]}\t{str(index[x]["page"])}\n')
+                    else:
+                        break
+            print(Fore.GREEN + "\n处理完成, 生成在同 index.txt 目录下")
+            # 需要检查
+            if len(toc_sub) > 0:
+                fp = os.path.join(os.path.split(file_index_all)[0], '_need_checking.log')
+                with open(fp, 'w', encoding='utf-8') as fw:
+                    for t in toc_sub:
+                        fw.write(t)
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + "存在不确定的排序, 已存放在日志 _need_checking.log 中，请手动对照调整")
+        else:
+            print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
 
     def text_file_check(self, text_file):
         check_result = 0
@@ -223,7 +327,7 @@ class FuncLib():
         with open(file_info, 'w', encoding='utf-8') as fw:
             if file_info_raw and os.path.exists(file_info_raw):
                 with open(file_info_raw, 'r', encoding='utf-8') as fr:
-                    fw.write(fr.read())
+                    fw.write(fr.read().rstrip())
             if templ_choice:
                 fw.write(f"\n<div><br/>{dict_name}, built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}, based on template {templ_choice.upper()}.<br/></div>\n")
             else:
@@ -419,13 +523,19 @@ class FuncLib():
         else:
             os.makedirs(dir_imgs_out)
         # 获取图像文件列表
+        num_flg = True  # 图像文件名是否纯数字
         img_files = []
         for fname in os.listdir(dir_imgs_in):
             fpath = os.path.join(dir_imgs_in, fname)
             if os.path.isfile(fpath):
                 img_files.append(fpath)
+            if not re.match(r'\d+', fname.split('.')[0]):
+                num_flg = False
         # 按旧文件名排序
-        img_files.sort(reverse=False)  # 正序排
+        if num_flg:
+            img_files.sort(key=lambda x: int(os.path.split(x)[1].split('.')[0]), reverse=False)  # 按数字排
+        else:
+            img_files.sort(reverse=False)  # 按字符串排
         n_len = len(str(len(img_files)))  # 获取序号位数
         # 重命名
         imgs = []

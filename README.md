@@ -1,22 +1,24 @@
 ## AutoMdxBuilder
 **自动化制作 mdx 词典工具，人人都可以制作电子词典**
 
-目前主要具备以下功能：
+AutoMdxBuilder 是 [[Mdict]](https://www.mdict.cn/wp/?lang=en) 词典制作相关的工具，旨在自动化词典制作过程，同时降低制作门槛，该工具目前具备以下功能：
 
 **(一) 打包/解包**
 
-* 解包 mdx/mdd 文件。功能同 `MdxExport.exe`，另支持自动批量。
-* 打包成 mdx 文件。功能同 `MdxBuilder.exe` 。
-* 打包成 mdd 文件。功能同 `MdxBuilder.exe`，另支持自动批量。
+* 解包 mdx/mdd 文件。功能同 `MdxExport.exe`，支持自动解 mdd 分包。
+* 打包成 mdx/mdd 文件。功能同 `MdxBuilder.exe`，支持 mdd 自动分包。
 
 **(二) 制作词典**
 
-* 制作图像词典 (模板A，朴素版)
-* 制作图像词典 (模板B，导航版)
-* 制作文本词典 (模板C，朴素版)
-* 制作文本词典 (模板D，导航版)
+* 自动化制作词典 (目前有A-D四个可选模板）
 
-## 成品预览
+**(三) 还原词典**
+
+* 将 Mdict 词典逆向还原成原材料，方便词典的二次编辑
+
+## 词典制作
+
+### 成品预览
 #### 图像词典 (模板A，朴素版)
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/img_dict_atmpl.gif)
 
@@ -29,34 +31,17 @@
 #### 文本词典 (模板D，导航版)
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/text_dict_dtmpl.gif)
 
-## 使用方法
+### 词典制作概述
 
-### 操作步骤
+使用词典制作功能时，需要准备好原材料，将所需要的材料单独用一个文件夹收纳（不妨称它为 amb 文件夹）。词典制作的配置信息写在 build.toml 文件中，同样也放置在该文件夹中。下面是一个示例的 amb 文件夹结构：
 
-#### （一）准备工具
-1. 安装 Python。（Windows）从 [Python官网](https://www.python.org) 下载安装 Python 的 `.exe` 包，运行按提示安装即可；
-2. 解压本工具 [AutoMdxBuilder_xx.zip](https://github.com/Litles/AutoMdxBuilder/releases) 作为工作文件夹（假设为 AutoMdxBuilder）；
-3. 安装 Python 模块包。在 AutoMdxBuilder  内执行 `pip install -r requirements.txt`即可（或手动挨个安装 `requirements.txt` 中所列包也行）；
+> AutoMdxBuilder 1.4 及以上版本已不再需要修改 settings.py（取而代之的是 build.toml），原材料文件夹也独立于程序之外，也无名称要求
 
-#### （二）制作词典
-4. 准备词典制作所需的原材料。在 AutoMdxBuilder 文件夹内创建子文件夹 `raw`，将原材料按要求放置其内（**具体参见下面说明**）；
-5. 修改好 `settings.py` 配置文件（**具体参见下面说明**）；
-6. 运行 auto_mdx_builder.py （可直接双击），按对话框提示输入。词典成品将生成在 `out` 子文件夹内，过程文件存放在 `_tmp` 子文件夹内以备用。
+![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/amb_folder.png)
 
 ### 原材料准备具体说明
 
-制作词典才需要在子文件夹 `raw` 内放置原材料，如果是使用程序的其他功能则不涉及。制作不同模板的词典，所需的原材料也不尽相同，下面分模板说明：
-
-**通用可选**
-
-* （可选）`syns.txt` 文件：同义词文件；
-* （可选）`info.html` 文件：词典介绍等描述。
-
-**注意事项**
-
-* 凡涉及的文本文件（如`.txt`、`.html`），一律要求 **UTF-8 无 BOM** 的编码格式；
-* `raw` 文件夹中只放置需要用到的文件/文件夹，**不用到的不要出现在 raw 文件夹内**；
-* 文件夹和文件的名称就按本说明所提的，不建议自定义名称。
+制作不同模板的词典，所需的原材料也不尽相同，下面分模板列举：
 
 #### 图像词典 (模板A)
 
@@ -77,19 +62,24 @@
 
 * （必须）`index_all.txt` 文件：全索引文件
 
-![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/work_dir_tree.png)
+**（通用可选）** 除上述各模板的材料准备之外，下面两个是通用材料，制作词典可按需添加：
 
-![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/imgs_order.png)
+* （可选）`syns.txt` 文件：同义词文件；
+* （可选）`info.html` 文件：词典介绍等描述。
 
-## 相关文件具体说明
+**（注意事项）**
 
-### 配置文件 `settings.py`
+* 凡涉及的文本文件（如`.txt`、`.html`），一律要求 **UTF-8 无 BOM** 的编码格式；
+* 原材料文件夹中只放置需要用到的文件/文件夹，**为避免误读取，不用到的不要出现在原材料文件夹内**；
+* 文件夹和文件的名称就按本说明所提的，不建议自定义名称。
 
-一般修改图中绿框中的部分便可
+## 相关文件说明
+
+### 配置文件 `build.toml`
+
+参见 demo 中的样板，已有详细说明。对于模板 A 的 `self.navi_items`，其中 `a` 的值是显示文字，`ref`的值是与 `toc.txt` 中词目对应的：
 
 ![img](https://github.com/Litles/AutoMdxBuilder/blob/main/images/settings.png)
-
-有 `toc.txt` 文件才需要设置 `self.navi_items`。`a`的值是显示文字，`ref`的值是与 `toc.txt` 中词目对应的。
 
 ### 索引文件 `index.txt`
 

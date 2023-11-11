@@ -78,7 +78,7 @@ class ImgDictAtmpl:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None, None
 
-    def extract_final_txt(self, file_final_txt, out_dir):
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name):
         """ 从模板A词典的源 txt 文本中提取 index, toc, syns 信息 """
         # 1.提取信息
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
@@ -152,8 +152,8 @@ class ImgDictAtmpl:
                     fw.write(f'{s[0]}\t{s[1]}\n')
         # (d) build.toml
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
-        self.settings.build["global"]["templ_choice"] = "a"
-        self.settings.build["global"]["name"] = os.path.split(file_final_txt)[1].split('.')[0]
+        self.settings.build["global"]["templ_choice"] = "A"
+        self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
         self.settings.build["template"]["a"]["body_start"] = body_start
         if len(navi_items) > 0:
@@ -167,7 +167,6 @@ class ImgDictAtmpl:
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
         os.remove(file_final_txt)
-        return True
 
     def _check_raw_files(self):
         """ 检查原材料

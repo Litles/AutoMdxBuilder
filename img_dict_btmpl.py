@@ -45,7 +45,7 @@ class ImgDictBtmpl:
             else:
                 file_toc_all = os.path.join(self.settings.dir_input, self.settings.fname_toc_all)  # index_all 的替代
                 file_index_all = os.path.join(self.settings.dir_output_tmp, self.settings.fname_index_all)
-                self.func.toc_to_index(file_toc_all, file_index_all)
+                self.func.toc_all_to_index(file_toc_all, file_index_all)
             words_part1 = self._make_entries_with_navi(imgs, file_index_all, file_2)
             step += 1
             print(f'{step}.文件 "{self.settings.fname_entries_with_navi}" 已生成；')
@@ -78,7 +78,7 @@ class ImgDictBtmpl:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None, None
 
-    def extract_final_txt(self, file_final_txt, out_dir):
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name):
         """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
         dcts = []
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
@@ -93,10 +93,14 @@ class ImgDictBtmpl:
                 }
                 dcts.append(dct)
             # 2.提取 syns, 并同时输出 syns.txt
+            syns_flg = False
             pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
                 for t in pat_syn.findall(text):
                     fw.write(f'{t[0]}\t{t[1]}\n')
+                    syns_flg = True
+            if not syns_flg:
+                os.remove(os.path.join(out_dir, 'syns.txt'))
             # 3.识别 name_abbr, body_start
             body_start = 1
             names = []
@@ -120,14 +124,13 @@ class ImgDictBtmpl:
                     fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
         # 输出 build.toml 文件
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
-        self.settings.build["global"]["templ_choice"] = "b"
-        self.settings.build["global"]["name"] = os.path.split(file_final_txt)[1].split('.')[0]
+        self.settings.build["global"]["templ_choice"] = "B"
+        self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
         self.settings.build["template"]["b"]["body_start"] = body_start
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
         os.remove(file_final_txt)
-        return True
 
     def _make_entries_with_navi(self, imgs, file_index_all, file_out):
         """ (二) 生成主体词条, 带层级导航 """
@@ -216,14 +219,25 @@ class ImgDictBtmpl:
         # 1.检查索引文件: 必须存在且合格
         if self.func.text_file_check(file_index_all) == 2:
             # 读取词条索引
+            p_last = -100000
+            mess_items = []
             with open(file_index_all, 'r', encoding='utf-8') as fr:
                 lines = fr.readlines()
                 pat = re.compile(r'^([^\t]+)\t([\-\d]+)[\r\n]*$')
                 for line in lines:
-                    if pat.match(line):
-                        i = int(pat.match(line).group(2))
+                    mth = pat.match(line)
+                    if mth:
+                        i = int(mth.group(2))
                         max_index = max(max_index, i)
+                        if i < p_last:
+                            mess_items.append(f"{mth.group(1)}\t{mth.group(2)}\n")
+                        p_last = i
             proc_flg, dcts = self.func.read_index_all(True, file_index_all)
+            if len(mess_items) > 0:
+                with open(os.path.join(self.settings.dir_input, '_need_checking.log'), 'w', encoding='utf-8') as fw:
+                    for mi in mess_items:
+                        fw.write(mi)
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + "索引中存在乱序的词条, 已输出在日志 _need_checking.log 中, 请检查")
         elif self.func.text_file_check(file_toc_all) == 2:
             index_all_flg = False
             # 读取词条索引

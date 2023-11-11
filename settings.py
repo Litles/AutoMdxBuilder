@@ -61,11 +61,11 @@ class Settings:
                 self.name_abbr = build["global"]["name_abbr"]  # 书名首字母缩写
                 self.simp_trad_flg = build["global"]["simp_trad_flg"]  # 是否要繁简通搜
                 # 区别设置
-                self.templ_choice = build["global"]["templ_choice"]  # 模板选择
-                if self.templ_choice in ('a', 'A'):
+                self.templ_choice = build["global"]["templ_choice"].upper()  # 模板选择
+                if self.templ_choice == 'A':
                     self.body_start = build["template"]["a"]["body_start"]  # 正文起始页为第几张图(>=1)
                     self.navi_items = build["template"]["a"].get("navi_items", [])
-                elif self.templ_choice in ('b', 'B'):
+                elif self.templ_choice == 'B':
                     self.body_start = build["template"]["b"]["body_start"]  # 正文起始页为第几张图(>=1)
                 # 设定其他变量
                 self.fname_final_txt = f"{self.name}.txt"

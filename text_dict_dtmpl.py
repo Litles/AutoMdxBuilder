@@ -7,6 +7,7 @@
 
 import os
 import re
+from tomlkit import dumps
 from colorama import init, Fore, Back, Style
 from func_lib import FuncLib
 
@@ -66,6 +67,58 @@ class TextDictDtmpl:
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None
+
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name):
+        """ 从模板D词典的源 txt 文本中提取 index, syns 信息 """
+        dcts = []
+        # 提取资料
+        with open(file_final_txt, 'r', encoding='utf-8') as fr:
+            text = fr.read()
+            # 1.提取 index_all
+            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.+?)</div>.+?(<div class="(entry-body|toc-list)">[^\r\n]+</div>)$', flags=re.M+re.S+re.I)
+            for t in pat_index.findall(text):
+                if t[2].startswith('<div class="entry-body">'):
+                    body = re.search(r'<div class="entry-body">(.+?)</div>$', t[2], flags=re.M+re.I).group(1)
+                else:
+                    body = ''
+                dct = {
+                    "id": t[0],
+                    "name": t[1],
+                    "body": body
+                }
+                dcts.append(dct)
+            # 2.提取 syns
+            syns_flg = False
+            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for t in pat_syn.findall(text):
+                    fw.write(f'{t[0]}\t{t[1]}\n')
+                    syns_flg = True
+            if not syns_flg:
+                os.remove(os.path.join(out_dir, 'syns.txt'))
+            # 3.识别 name_abbr
+            mth = re.search(r'^<link rel="stylesheet" type="text/css" href="([^>/\"\.]+?)\.css"/>$', text, flags=re.M+re.I)
+            if mth:
+                name_abbr = mth.group(1).upper()
+            else:
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
+                name_abbr = 'XXXXCD'
+        # 整理 index, 输出 index_all.txt
+        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
+        with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
+            for dct in dcts:
+                if dct["body"] == '':
+                    fw.write(f'{dct["name"]}\t\n')
+                else:
+                    fw.write(f'{dct["name"]}\t{dct["body"]}\n')
+        # 输出 build.toml 文件
+        self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
+        self.settings.build["global"]["templ_choice"] = "D"
+        self.settings.build["global"]["name"] = dict_name
+        self.settings.build["global"]["name_abbr"] = name_abbr
+        with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
+            fw.write(dumps(self.settings.build))
+        os.remove(file_final_txt)
 
     def _make_entries_text_with_navi(self, file_index_all, file_out):
         words = []

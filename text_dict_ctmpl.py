@@ -7,6 +7,7 @@
 
 import os
 import re
+from tomlkit import dumps
 from colorama import init, Fore, Back, Style
 from func_lib import FuncLib
 
@@ -66,6 +67,41 @@ class TextDictCtmpl:
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
             return self.proc_flg, None, None
+
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name):
+        """ 从模板C词典的源 txt 文本中提取 index, syns 信息 """
+        # 提取资料
+        with open(file_final_txt, 'r', encoding='utf-8') as fr:
+            text = fr.read()
+            # 1.提取 index
+            pat_index = re.compile(r'^<div class="entry-headword">(.+?)</div>[\r\n]+<div class="entry-body">(.+?)</div>[\r\n]+</>$', flags=re.M+re.I)
+            with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
+                for t in pat_index.findall(text):
+                    fw.write(f'{t[0]}\t{t[1]}\n')
+            # 2.提取 syns
+            syns_flg = False
+            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for t in pat_syn.findall(text):
+                    fw.write(f'{t[0]}\t{t[1]}\n')
+                    syns_flg = True
+            if not syns_flg:
+                os.remove(os.path.join(out_dir, 'syns.txt'))
+            # 3.识别 name_abbr
+            mth = re.search(r'^<link rel="stylesheet" type="text/css" href="([^>/\"\.]+?)\.css"/>$', text, flags=re.M+re.I)
+            if mth:
+                name_abbr = mth.group(1).upper()
+            else:
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
+                name_abbr = 'XXXXCD'
+        # 输出 build.toml 文件
+        self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
+        self.settings.build["global"]["templ_choice"] = "C"
+        self.settings.build["global"]["name"] = dict_name
+        self.settings.build["global"]["name_abbr"] = name_abbr
+        with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
+            fw.write(dumps(self.settings.build))
+        os.remove(file_final_txt)
 
     def _make_entries_text(self, file_index, file_out):
         words = []
