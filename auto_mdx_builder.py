@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# @Date    : 2023-07-13 19:49:50
+# @Date    : 2023-11-16 00:00:17
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.4
+# @Version : 1.5
 
 import os
 import re
@@ -423,7 +423,7 @@ def print_menu():
     print(Fore.CYAN + "  22" + Fore.RESET + ".【图像词典】将 toc.txt 和 index.txt 合并成 index_all.txt 文件")
     print("\n(三) 还原词典")
     print(Fore.CYAN + "  30" + Fore.RESET + ".还原词典" + Fore.YELLOW + " (仅支持还原 AMB 1.4 以上版本词典)")
-    print(Fore.CYAN + "  31" + Fore.RESET + ".【图像词典】将 index_all.txt 处理成 toc_all.txt 文件")
+    print(Fore.CYAN + "  31" + Fore.RESET + ".【图像词典】将 index_all.txt 还原成 toc_all.txt 文件")
     print("\n(四) 其他")
     print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
 
@@ -441,8 +441,7 @@ if __name__ == '__main__':
         # 执行选择
         if sel in range(1, 50):
             print('\n------------------')
-            amb = AutoMdxBuilder()
-            amb.auto_processing(sel)
+            amb = AutoMdxBuilder().auto_processing(sel)
             print('\n\n------------------------------------')
             if input(Fore.CYAN + "回车退出程序, 或输入 Y/y 继续使用 AMB: " + Fore.RESET) not in ['Y','y']:
                 break
