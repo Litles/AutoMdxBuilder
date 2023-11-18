@@ -1,0 +1,9 @@
+%%MediaBox 0 0 <width> <height>
+%%Rotate 0
+%%Image Im<num> <path>
+
+% Draw an image.
+q
+<width> 0 0 <height> 0 0 cm
+/Im<num> Do
+Q

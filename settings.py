@@ -48,7 +48,7 @@ class Settings:
         self.css_ctmpl = 'ctmpl.css'
         self.css_dtmpl = 'dtmpl.css'
 
-    def load_build_toml(self, file_toml, outside_flg):
+    def load_build_toml(self, file_toml, pdf_flg=False, outside_flg=True):
         init(autoreset=True)
         build_flg = False
         # 输入文件夹
@@ -71,7 +71,9 @@ class Settings:
                 self.fname_final_txt = f"{self.name}.txt"
                 self.fname_css = f"{self.name_abbr.lower()}.css"
                 # 确定输出文件夹
-                if outside_flg:
+                if pdf_flg:
+                    pass
+                elif outside_flg:
                     self.dir_output = os.path.join(os.path.split(self.dir_input)[0], self.name) + '_mdict'
                 else:
                     self.dir_output = os.path.join(self.dir_input, self.name) + '_mdict'
