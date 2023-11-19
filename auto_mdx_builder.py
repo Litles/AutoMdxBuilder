@@ -29,7 +29,8 @@ class AutoMdxBuilder:
         if sel == 1:
             # --- 解包 mdx/mdd 文件 ---
             mfile = input("请输入要解包的 mdx/mdd 文件路径: ").strip('"')
-            self._export_mdx(mfile)
+            if self._export_mdx(mfile):
+                print(Fore.GREEN + "\n已输出在同目录下: " + Fore.RESET + os.path.splitext(mfile)[0])
         elif sel == 2:
             # --- 将源 txt 文件打包成 mdx 文件 ---
             file_final_txt = input("请输入要打包的 txt 文件路径: ").strip('"')
@@ -68,8 +69,31 @@ class AutoMdxBuilder:
             done_flg = self._pack_to_mdd(dir_data, None)
             if done_flg:
                 print(Fore.GREEN + "\n打包完毕。")
+        elif sel == 10:
+            # --- 从 PDF文件/pdg文件夹 生成预备原材料 ---
+            p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"/\\')
+            if os.path.isfile(p) and os.path.splitext(p)[1] == '.pdf':
+                self.pdf_to_amb(p)
+            elif os.path.isdir(p):
+                self.pdf_to_amb(p, False)
+            else:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+        elif sel == 11:
+            # --- 从 toc_all.txt 生成 index_all.txt ---
+            file_toc_all = input("请输入 toc_all.txt 的文件路径: ").strip('"')
+            file_index_all = os.path.join(os.path.split(file_toc_all)[0], 'index_all.txt')
+            if self.func.toc_all_to_index(file_toc_all, file_index_all):
+                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
+            else:
+                print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
+        elif sel == 12:
+            # --- 合并 toc.txt 和 index.txt 为 index_all.txt ---
+            file_toc = input("(1) 请输入 toc.txt 的文件路径: ").strip('"')
+            file_index = input("(2) 请输入 index.txt 的文件路径: ").strip('"')
+            file_index_all = os.path.join(os.path.split(file_index)[0], 'index_all.txt')
+            self.func.merge_to_index_all(file_toc, file_index, file_index_all)
         elif sel == 20:
-            # --- 制作词典 ---
+            # --- 生成词典 ---
             p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"/\\')
             if os.path.split(p)[1] == 'build.toml':
                 if self.settings.load_build_toml(p, False, False):
@@ -83,22 +107,8 @@ class AutoMdxBuilder:
                     print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 build.toml 文件")
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
-        elif sel == 21:
-            # --- 【图像词典】将 toc_all.txt 处理成 index_all.txt 文件 ---
-            file_toc_all = input("请输入 toc_all.txt 的文件路径: ").strip('"')
-            file_index_all = os.path.join(os.path.split(file_toc_all)[0], 'index_all.txt')
-            if self.func.toc_all_to_index(file_toc_all, file_index_all):
-                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
-            else:
-                print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
-        elif sel == 22:
-            # --- 【图像词典】将 toc.txt 和 index.txt 合并成 index_all.txt 文件 ---
-            file_toc = input("(1) 请输入 toc.txt 的文件路径: ").strip('"')
-            file_index = input("(2) 请输入 index.txt 的文件路径: ").strip('"')
-            file_index_all = os.path.join(os.path.split(file_index)[0], 'index_all.txt')
-            self.func.merge_to_index_all(file_toc, file_index, file_index_all)
         elif sel == 30:
-            # --- 还原词典 ---
+            # --- 从词典还原原材料 ---
             p = input("请输入词典的文件夹或 mdx/mdd 文件路径: ").strip('"/\\')
             if os.path.isfile(p) and os.path.splitext(p)[1] == '.mdx':
                 self._restore_raw(p, False)
@@ -115,24 +125,7 @@ class AutoMdxBuilder:
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 31:
-            # --- 【图像词典】将 index_all.txt 还原成 toc_all.txt 文件 ---
-            file_index_all = input("请输入 index_all.txt 的文件路径: ").strip('"')
-            file_toc_all = os.path.join(os.path.split(file_index_all)[0], 'toc_all.txt')
-            if self.func.index_to_toc(file_index_all, file_toc_all):
-                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
-            else:
-                print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码")
-        elif sel == 41:
-            # --- 从 PDF文件/pdg文件夹 生成原材料 ---
-            p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"/\\')
-            if os.path.isfile(p) and os.path.splitext(p)[1] == '.pdf':
-                self.pdf_to_amb(p)
-            elif os.path.isdir(p):
-                self.pdf_to_amb(p, False)
-            else:
-                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
-        elif sel == 42:
-            # --- 用原材料合成 PDF 文件 ---
+            # --- 从原材料还原 PDF ---
             p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"/\\')
             if os.path.split(p)[1] == 'build.toml':
                 if self.settings.load_build_toml(p, True):
@@ -146,6 +139,56 @@ class AutoMdxBuilder:
                     print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 build.toml 文件")
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+        elif sel == 32:
+            # --- 从 index_all.txt 还原 toc_all.txt ---
+            file_index_all = input("请输入 index_all.txt 的文件路径: ").strip('"')
+            file_toc_all = os.path.join(os.path.split(file_index_all)[0], 'toc_all.txt')
+            if self.func.index_to_toc(file_index_all, file_toc_all):
+                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
+            else:
+                print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码")
+        elif sel == 41:
+            # --- 从 PDF 提取图片（mutool） ---
+            p = input("请输入 PDF 文件路径: ").strip('"/\\')
+            if os.path.isfile(p) and p.lower().endswith('.pdf'):
+                fname = os.path.split(p)[1]
+                out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
+                toolkit.extract_pdf_to_imgs(p, out_dir)
+            else:
+                print(Fore.RED + "\n输入的路径有误")
+        elif sel == 42:
+            # --- 将 PDF 转换成图片（mutool） ---
+            p = input("请输入 PDF 文件路径: ").strip('"/\\')
+            if os.path.isfile(p) and p.lower().endswith('.pdf'):
+                fname = os.path.split(p)[1]
+                out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
+                dpi = input("请输入要生成图片的 DPI（回车则默认300）: ").strip('"/\\')
+                if re.match(r'^\d+$', dpi, flags=re.I):
+                    toolkit.convert_pdf_to_imgs(p, out_dir, int(dpi))
+                else:
+                    toolkit.convert_pdf_to_imgs(p, out_dir)
+            else:
+                print(Fore.RED + "\n输入的路径有误")
+        elif sel == 43:
+            # --- 将 图片 合成 PDF（mutool） ---
+            p = input("请输入图片所在文件夹路径: ").strip('"/\\')
+            if os.path.isdir(p):
+                out_file = p+'.pdf'
+                toolkit.combine_img_to_pdf(p, out_file)
+            else:
+                print(Fore.RED + "\n输入的路径有误")
+        elif sel == 44:
+            # --- PDF 书签导出/导入（FreePic2Pdf） ---
+            file_pdf = input("请输入 PDF 文件路径: ").strip('"/\\')
+            dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"/\\')
+            if os.path.isdir(dir_bkmk):
+                toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk, False)
+            elif dir_bkmk is None or len(dir_bkmk) == 0:
+                fname = os.path.split(file_pdf)[1]
+                dir_bkmk = os.path.join(os.path.split(file_pdf)[0], fname.split('.')[0]+'_bkmk')
+                toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk)
+            else:
+                print(Fore.RED + "\n输入的路径有误")
         else:
             pass
 
@@ -228,6 +271,7 @@ class AutoMdxBuilder:
 
     def _export_mdx(self, mfile):
         """ 解包 mdx/mdd (取代 MdxExport.exe) """
+        done_flg = True
         if os.path.isfile(mfile) and mfile.endswith('.mdx'):
             out_dir = os.path.splitext(mfile)[0]
             os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
@@ -236,10 +280,34 @@ class AutoMdxBuilder:
                 if os.path.isfile(fp):
                     fp_new = fp.replace('.mdx', '')
                     os.rename(fp, fp_new)
-            print(Fore.GREEN + "\n已输出在同目录下: " + Fore.RESET + out_dir)
+            # 按编号精准还原源 txt
+            xname = os.path.split(mfile)[1]
+            file_final_txt = os.path.join(out_dir, xname.split('.')[0]+'.txt')
+            entries = []
+            eid = ''
+            with open(file_final_txt, 'r', encoding='utf-8') as fr:
+                text = ''
+                for line in fr:
+                    if re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line, flags=re.I):
+                        eid = re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line, flags=re.I).group(1)
+                    elif not re.match(r'^</>\s*$', line, flags=re.I):
+                        text += line
+                    else:
+                        text += line
+                        entries.append({"eid": eid, "text": text})
+                        text = ''
+            if eid != '':
+                entries.sort(key=lambda x: x["eid"], reverse=False)
+                with open(file_final_txt, 'w', encoding='utf-8') as fw:
+                    for entry in entries:
+                        fw.write(entry["text"])
+            else:
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "检测到词典并非由 AMB 生成, 不保证词条顺序的准确还原")
         elif os.path.isfile(mfile) and mfile.endswith('.mdd'):
             cur_dir, mname = os.path.split(mfile)
             out_dir = os.path.join(os.path.splitext(mfile)[0], 'data')
+            if os.path.exists(out_dir):
+                shutil.rmtree(out_dir)
             # 检查是否存在 mdd 分包
             multi_mdd_flg = False
             mdd_names = [mname]
@@ -256,9 +324,10 @@ class AutoMdxBuilder:
                     os.system(f'mdict -x "{os.path.join(cur_dir, mdd_name)}" -d "{out_dir}"')
             else:
                 os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
-            print(Fore.GREEN + f"\n已输出在同目录下: " + Fore.RESET + out_dir)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+            done_flg = False
+        return done_flg
 
     def _pack_to_mdict(self, file_final_txt, file_dict_info, dir_data, dir_output):
         """ 打包 mdx/mdd (取代 MdxBuilder.exe) """
@@ -268,7 +337,17 @@ class AutoMdxBuilder:
         print('正在生成 mdx 文件……\n')
         ftitle = os.path.join(dir_output, os.path.splitext(os.path.split(file_final_txt)[1])[0])
         if os.path.exists(file_final_txt) and os.path.exists(file_dict_info):
-            os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{file_final_txt}" "{ftitle}.mdx"')
+            # 给词条添加编号信息
+            tmp_final_txt = os.path.join(self.settings.dir_output_tmp, 'tmp_final.txt')
+            with open(file_final_txt, 'r', encoding='utf-8') as fr:
+                with open(tmp_final_txt, 'w', encoding='utf-8') as fw:
+                    n = 0
+                    for line in fr:
+                        n += 1
+                        if re.match(r'^</>\s*$', line, flags=re.I):
+                            fw.write(f'<div class="entry-id" style="display:none;">{str(n).zfill(8)}</div>\n')
+                        fw.write(line)
+            os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{tmp_final_txt}" "{ftitle}.mdx"')
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {file_final_txt} 或 {file_dict_info} 不存在")
             mdx_flg = False
@@ -381,24 +460,30 @@ class AutoMdxBuilder:
 
     def _restore_raw(self, xfile, outside_flg):
         """ 将词典还原为原材料 """
+        # 1.准备参数
         extract_flg = False
         dict_name = None
         templ_choice = None
-        # 1.准备输出文件夹
         dir_input, fname = os.path.split(xfile)
-        if outside_flg:
-            out_dir = os.path.join(os.path.split(dir_input)[0], fname.split('.')[0]) + '_amb'
-        else:
-            out_dir = os.path.splitext(xfile)[0] + '_amb'
-        if os.path.exists(out_dir):
-            shutil.rmtree(out_dir)
         # 2.分析 mdx 文件
-        os.system(f'mdict -x "{xfile}" -d "{out_dir}"')
+        if not os.path.exists(self.settings.dir_output_tmp):
+            os.makedirs(self.settings.dir_output_tmp)
+        tmp_restore = os.path.join(self.settings.dir_output_tmp, 'restore')
+        if not os.path.exists(tmp_restore):
+            os.makedirs(tmp_restore)
+        tmp_xfile = os.path.join(tmp_restore, fname)
+        tmp_xdir = os.path.splitext(tmp_xfile)[0]
+        if os.path.exists(tmp_xdir):
+            shutil.rmtree(tmp_xdir)
+        os.system(f'copy /y "{xfile}" "{tmp_xfile}"')
+        if self._export_mdx(tmp_xfile):
+            tmp_final_txt = os.path.join(tmp_xdir, fname.split('.')[0]+'.txt')
+        # os.system(f'mdict -x "{xfile}" -d "{out_dir}"')
         # 分析 info 信息, 确定是否支持还原
-        for fname in os.listdir(out_dir):
-            fp = os.path.join(out_dir, fname)
-            text = None
-            if fp.endswith('.mdx.description.html'):
+        for f in os.listdir(tmp_xdir):
+            fp = os.path.join(tmp_xdir, f)
+            text = ''
+            if fp.endswith('.description.html'):
                 with open(fp, 'r+', encoding='utf-8') as fr:
                     pat = re.compile(r'<div><br/>([^><]*?), built with AutoMdxBuilder[^><]*?based on template ([A-D])\.<br/></div>', flags=re.I)
                     text = fr.read()
@@ -411,35 +496,46 @@ class AutoMdxBuilder:
                         break
         # 3.开始提取
         if extract_flg:
+            # 创建目标文件夹
+            if outside_flg:
+                out_dir = os.path.join(os.path.split(dir_input)[0], fname.split('.')[0]) + '_amb'
+            else:
+                out_dir = os.path.splitext(xfile)[0] + '_amb'
+            if not os.path.exists(out_dir):
+                os.makedirs(out_dir)
             # 提取 info.html
-            os.remove(fp)
             if not re.match(r'^\s*$', text):
                 with open(os.path.join(out_dir, 'info.html'), 'w', encoding='utf-8') as fw:
                     fw.write(text)
             # 提取 index, index_all, syns 等信息
-            for fname in os.listdir(out_dir):
-                fp = os.path.join(out_dir, fname)
-                if fp.endswith('.mdx.txt'):
-                    # 选择函数进行处理
-                    if templ_choice == 'A':
-                        ImgDictAtmpl(self).extract_final_txt(fp, out_dir, dict_name)
-                    elif templ_choice == 'B':
-                        ImgDictBtmpl(self).extract_final_txt(fp, out_dir, dict_name)
-                    elif templ_choice == 'C':
-                        TextDictCtmpl(self).extract_final_txt(fp, out_dir, dict_name)
-                    elif templ_choice == 'D':
-                        TextDictDtmpl(self).extract_final_txt(fp, out_dir, dict_name)
+            if tmp_final_txt:
+                # 选择函数进行处理
+                if templ_choice == 'A':
+                    ImgDictAtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
+                elif templ_choice == 'B':
+                    ImgDictBtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
+                elif templ_choice == 'C':
+                    TextDictCtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
+                elif templ_choice == 'D':
+                    TextDictDtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
             # 处理 mdd
             file_mdd = os.path.splitext(xfile)[0] + '.mdd'
             if os.path.isfile(file_mdd) and templ_choice in ('A', 'B'):
-                os.system(f'mdict -x "{file_mdd}" -d "{os.path.join(out_dir, "imgs")}"')
+                dir_data = os.path.join(out_dir, "imgs")
+                if os.path.exists(dir_data):
+                    shutil.rmtree(dir_data)
+                os.system(f'mdict -x "{file_mdd}" -d "{dir_data}"')
             elif os.path.isfile(file_mdd) and templ_choice in ('C', 'D'):
-                os.system(f'mdict -x "{file_mdd}" -d "{os.path.join(out_dir, "data")}"')
+                dir_data = os.path.join(out_dir, "data")
+                if os.path.exists(dir_data):
+                    shutil.rmtree(dir_data)
+                os.system(f'mdict -x "{file_mdd}" -d "{dir_data}"')
             else:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
             print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "词典并非由 AutoMdxBuilder 制作, 不支持还原")
+        shutil.rmtree(tmp_restore)
 
     def pdf_to_amb(self, input_path, pdf_flg=True):
         """ 从 PDF文件/pdg文件夹 生成 amb 文件夹 """
@@ -458,17 +554,21 @@ class AutoMdxBuilder:
             # 1.导出书签
             cur_path = os.getcwd()
             toolkit.eximport_bkmk_fp2p(input_path, os.path.join(cur_path, dir_bkmk))
-            with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16') as fr:
-                text = fr.read()
-                line_num = len(re.findall(r'^', text, flags=re.I+re.M))
-                if line_num <= 3:
-                    print(Fore.YELLOW + "INFO: " + Fore.RESET + "未识别到目录, 将不会生成 toc.txt")
-                else:
-                    with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
-                        fw.write(text)
-                    if line_num > 500:
-                        print(Fore.YELLOW + "INFO: " + Fore.RESET + "书签超过 500 行, 请后续确认是否包含索引, 是的话建议改名为 toc_all.txt")
-            with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r', encoding='utf-16') as fr:
+            try:
+                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16le') as fr:
+                    text = fr.read()
+                    line_num = len(re.findall(r'^', text, flags=re.I+re.M))
+                    if line_num <= 3:
+                        print(Fore.YELLOW + "INFO: " + Fore.RESET + "未识别到目录, 将不会生成 toc.txt")
+                    else:
+                        with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
+                            fw.write(text)
+                        if line_num > 500:
+                            print(Fore.YELLOW + "INFO: " + Fore.RESET + "书签超过 500 行, 请后续确认是否包含索引, 是的话建议改名为 toc_all.txt")
+            except UnicodeDecodeError:
+                os.system(f'copy /y "{os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt")}" "{os.path.join(out_dir, "[utf-16]toc.txt")}"')
+                print(Fore.YELLOW + "WARN: " + Fore.RESET + "书签中存在无法识别的字符, 已输出为 utf-16 编码")
+            with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r', encoding='utf-16le') as fr:
                 mt = re.search(r'(?<=BasePage=)(\d+)', fr.read(), flags=re.I)
                 if mt:
                     body_start = mt.group(0)
@@ -502,7 +602,7 @@ class AutoMdxBuilder:
             # 2.识别词典信息
             bkmk_itf = os.path.join(os.path.join(out_dir, 'imgs'), 'FreePic2Pdf.itf')
             if os.path.isfile(bkmk_itf):
-                with open(bkmk_itf, 'r', encoding='utf-16') as fr:
+                with open(bkmk_itf, 'r', encoding='utf-16le') as fr:
                     text = fr.read()
                     mt_body_start = re.search(r'(?<=TextPage=)(\d+)', text, flags=re.I)
                     mt_name = re.search(r'(?<=Title=)(.+)', text, flags=re.I)
@@ -549,7 +649,7 @@ class AutoMdxBuilder:
         os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf")}" "{os.path.join(dir_bkmk, "FreePic2Pdf.itf")}"')
         os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt")}" "{os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt")}"')
         # 1.生成临时书签
-        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-16') as fr:
+        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-16le') as fr:
             text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start), fr.read(), flags=re.I)
             fr.seek(0)
             fr.truncate()
@@ -559,7 +659,7 @@ class AutoMdxBuilder:
             if fname == 'toc.txt':
                 with open(os.path.join(dir_amb, fname), 'r', encoding='utf-8') as fr:
                     text = fr.read()
-                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-16') as fr:
+                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-16le') as fr:
                     fr.seek(0)
                     fr.truncate()
                     fr.write(text)
@@ -570,7 +670,7 @@ class AutoMdxBuilder:
                 if self.func.index_to_toc(os.path.join(dir_amb, fname), toc_tmp):
                     with open(toc_tmp, 'r', encoding='utf-8') as fr:
                         text = fr.read()
-                    with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-16') as fr:
+                    with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-16le') as fr:
                         fr.seek(0)
                         fr.truncate()
                         fr.write(text)
@@ -595,21 +695,26 @@ class AutoMdxBuilder:
 def print_menu():
     """ 打印选单 """
     # 功能选单
-    print("\n(一) 打包/解包")
+    print("\n(〇) 打包/解包")
     print(Fore.CYAN + "  1" + Fore.RESET + ".解包 mdx/mdd 文件")
     print(Fore.CYAN + "  2" + Fore.RESET + ".将源 txt 文件打包成 mdx 文件")
     print(Fore.CYAN + "  3" + Fore.RESET + ".将资料包文件夹打包成 mdd 文件")
+    print("\n(一) 准备原材料")
+    print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)")
+    print(Fore.CYAN + "  11" + Fore.RESET + ".从 toc_all.txt 生成 index_all.txt")
+    print(Fore.CYAN + "  12" + Fore.RESET + ".合并 toc.txt 和 index.txt 为 index_all.txt")
     print("\n(二) 制作词典")
     print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典" + Fore.YELLOW + " (需准备好原材料)")
-    print(Fore.CYAN + "  21" + Fore.RESET + ".【图像词典】将 toc_all.txt 处理成 index_all.txt 文件")
-    print(Fore.CYAN + "  22" + Fore.RESET + ".【图像词典】将 toc.txt 和 index.txt 合并成 index_all.txt 文件")
     print("\n(三) 还原词典")
-    print(Fore.CYAN + "  30" + Fore.RESET + ".还原词典" + Fore.YELLOW + " (仅支持还原 AMB 1.4 以上版本词典)")
-    print(Fore.CYAN + "  31" + Fore.RESET + ".【图像词典】将 index_all.txt 还原成 toc_all.txt 文件")
-    print("\n(四) 其他")
-    print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成原材料")
-    print(Fore.CYAN + "  42" + Fore.RESET + ".用原材料合成 PDF 文件")
-    print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
+    print(Fore.CYAN + "  30" + Fore.RESET + ".从词典还原原材料" + Fore.YELLOW + " (仅支持 AMB 1.4 以上版本)")
+    print(Fore.CYAN + "  31" + Fore.RESET + ".从原材料还原 PDF")
+    print(Fore.CYAN + "  32" + Fore.RESET + ".从 index_all.txt 还原 toc_all.txt")
+    print("\n(四) 其他工具")
+    print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片（mutool）")
+    print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片（mutool）")
+    print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成 PDF（mutool）")
+    print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入（FreePic2Pdf）")
+    # print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
 
 
 if __name__ == '__main__':
@@ -619,7 +724,7 @@ if __name__ == '__main__':
     while True:
         print_menu()
         try:
-            sel = int(input('\n请输入数字: '))
+            sel = int(input('\n请输入数字（回车或“0”退出程序）: '))
         except ValueError:
             sel = 0
         # 执行选择

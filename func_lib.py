@@ -491,9 +491,8 @@ class FuncLib():
         blank_flg = False
         text = ''
         with open(text_file, 'r', encoding='utf-8') as fr:
-            lines = fr.readlines()
             i = 0
-            for line in lines:
+            for line in fr:
                 i += 1
                 if i < 6:
                     text += line

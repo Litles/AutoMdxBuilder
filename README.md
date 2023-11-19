@@ -5,16 +5,23 @@ AutoMdxBuilder 是 [[Mdict]](https://www.mdict.cn/wp/?lang=en) 词典制作相�
 
 **(一) 打包/解包**
 
-* 解包 mdx/mdd 文件。功能同 `MdxExport.exe`，支持自动解 mdd 分包。
-* 打包成 mdx/mdd 文件。功能同 `MdxBuilder.exe`，支持 mdd 自动分包。
+* 解包 mdx/mdd 文件。功能同 `MdxExport.exe`，支持自动解 mdd 分包，支持保留原始词条顺序。
+* 打包成 mdx/mdd 文件。功能同 `MdxBuilder.exe`，支持 mdd 自动分包，支持保留原始词条顺序。
 
 **(二) 制作词典**
 
 * 自动化制作词典 (目前有A-D四个可选模板）
+* 一键从 PDF/pdg 等原料制作词典
 
 **(三) 还原词典**
 
 * 将 Mdict 词典逆向还原成原材料，方便词典的二次编辑
+* 将 Mdict 词典逆向还原成 PDF
+
+**(四) 其他实用工具**
+
+* PDF 与图片互转
+* PDF 书签管理
 
 ## 词典制作
 

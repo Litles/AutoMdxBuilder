@@ -9,6 +9,7 @@ import os
 import re
 import shutil
 import time
+import codecs
 from pywinauto.application import Application
 from pywinauto.keyboard import send_keys
 from pywinauto.timings import Timings
@@ -40,7 +41,7 @@ def pdf_to_imgs(file_pdf, dir_out):
             img_pdf_flg = False
     # 开始处理
     if img_pdf_flg:
-        extract_pdf_to_imgs(file_pdf, dir_out)
+        extract_pdf_to_imgs_pdfpatcher(file_pdf, dir_out)
     else:
         convert_pdf_to_imgs(file_pdf, dir_out)
     shutil.rmtree(dir_tmp_mp)
@@ -55,7 +56,8 @@ def convert_pdf_to_imgs(file_pdf, dir_out, dpi=300):
         os.makedirs(dir_out)
     file_png = os.path.join(dir_out, '%06d.png')
     # 开始转换
-    os.system(f'{file_exe} draw -o {file_png} -F png -r {str(dpi)} {file_pdf} 1-10')
+    os.system(f'{file_exe} draw -o {file_png} -F png -r {str(dpi)} {file_pdf}')
+    print('转换完成！')
 
 # def convert_pdf_to_imgs_fitz(file_pdf, dir_out):
 #     """ 使用 fitz(mupdf), 按 DPI 等参数转换成图片 """
@@ -105,6 +107,7 @@ def extract_pdf_to_imgs(file_pdf, dir_out):
         n += 1
         os.rename(img["path"], os.path.join(dir_out, str(n).zfill(6)+img["ext"]))
     shutil.rmtree(dir_tmp_me)
+    print('提取完成！')
 
 
 def extract_pdf_to_imgs_pdfpatcher(file_pdf, dir_out):
@@ -232,6 +235,7 @@ def combine_img_to_pdf(dir_imgs, file_pdf):
     shutil.rmtree(dir_pcs)
     shutil.rmtree(dir_pdf_frag)
     shutil.rmtree(dir_pdf_merge)
+    print('合成完成！')
 
 
 def combine_img_to_pdf_fp2p(dir_imgs, file_pdf):
@@ -240,10 +244,10 @@ def combine_img_to_pdf_fp2p(dir_imgs, file_pdf):
     dir_program = './tools/FreePic2Pdf/'
     file_ini_bak = './lib/FreePic2Pdf.ini'
     file_ini = os.path.join(dir_program, 'FreePic2Pdf.ini')
-    with open(file_ini_bak, 'r', encoding='utf-16') as fr:
+    with open(file_ini_bak, 'r', encoding='utf-16le') as fr:
         para_item = 'PARA_DIR_SRC='+dir_imgs.replace('\\', '\\\\')
         text = re.sub(r'^PARA_DIR_SRC=.+$', para_item, fr.read(), flags=re.M+re.I)
-        with open(file_ini, 'w', encoding='utf-16') as fw:
+        with open(file_ini, 'w', encoding='utf-16le') as fw:
             fw.write(text)
     # 1.启动 FreePic2Pdf 程序
     Timings.fast()
@@ -272,10 +276,10 @@ def convert_pdg_to_img(dir_pdg, dir_out):
     dir_program = './tools/Pdg2Pic/'
     file_ini_bak = './lib/Pdg2Pic.ini'
     file_ini = os.path.join(dir_program, 'Pdg2Pic.ini')
-    with open(file_ini_bak, 'r', encoding='utf-16') as fr:
+    with open(file_ini_bak, 'r', encoding='utf-16le') as fr:
         para_item = 'PARA_DIR_TGT='+dir_out.replace('\\', '\\\\')
         text = re.sub(r'^PARA_DIR_TGT=.+$', para_item, fr.read(), flags=re.M+re.I)
-        with open(file_ini, 'w', encoding='utf-16') as fw:
+        with open(file_ini, 'w', encoding='utf-16le') as fw:
             fw.write(text)
     # 1.启动 Pdg2Pic 程序
     Timings.fast()
@@ -360,44 +364,47 @@ def eximport_bkmk_fp2p(file_pdf, dir_bkmk, export_flg=True):
         else:
             time.sleep(0.2)
     if export_flg:
+        # [备用1]utf-16判断有无BOM
+        # with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'rb') as frb:
+        #     encoded_text = frb.read()
+        #     bom = codecs.BOM_UTF16_LE
+        #     if encoded_text.startswith(bom):
+        #         bkmk_itf = encoded_text[len(bom):].decode('utf-16le')
+        #     else:
+        #         bkmk_itf = encoded_text.decode('utf-16le')
+        #     base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf, flags=re.I)
+        #     if base_page:
+        #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.I+re.M)
+        # with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'rb') as frb:
+        #     encoded_text = frb.read()
+        #     bom = codecs.BOM_UTF16_LE
+        #     if encoded_text.startswith(bom):
+        #         bkmk_text = encoded_text[len(bom):].decode('utf-16le')
+        #     else:
+        #         bkmk_text = encoded_text.decode('utf-16le')
+        # [备用2]考虑是否一律转utf-8
+        # with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r', encoding='utf-16') as fr:
+        #     bkmk_itf = fr.read()
+        #     base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf, flags=re.I)
+        #     if base_page:
+        #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.I+re.M)
+        # with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16') as fr:
+        #     bkmk_text = fr.read()
+        # dir_bkmk_bk = os.path.join('lib', 'bkmk')
+        # os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf")}" "{os.path.join(dir_bkmk, "FreePic2Pdf.itf")}"')
+        # os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt")}" "{os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt")}"')
+        # with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'w', encoding='utf-8') as fw:
+        #     fw.write(bkmk_itf)
+        # with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'w', encoding='utf-8') as fw:
+        #     fw.write(bkmk_text)
+        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-16le') as fr:
+            bkmk_itf = fr.read()
+            base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf, flags=re.I)
+            if base_page:
+                bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.I+re.M)
+            fr.seek(0)
+            fr.truncate()
+            fr.write(bkmk_itf)
         print('书签导出完成！')
     else:
         print('书签导入完成！')
-
-
-# convert pdg to image
-# file_pdf = "C:\\Users\\shuji\\Desktop\\汉语方言词汇_out_jb2.pdf"
-# dir_out = "C:\\Users\\shuji\\Desktop\\patch_out"
-# extract_pdf_to_imgs_pdfpatcher(file_pdf, dir_out)
-
-# convert pdg to image
-# dir_pdg = "C:\\Users\\shuji\\Downloads\\汉语方言词汇_pdg"
-# dir_out = "C:\\Users\\shuji\\Downloads\\汉语方言词汇_img"
-# convert_pdg_to_img(dir_pdg, dir_out)
-
-# file_pdf = "C:\\Users\\shuji\\Desktop\\汉语方言词汇_out_tiff.pdf"
-# dir_bkmk = "C:\\Users\\shuji\\Desktop\\bkmk"
-# eximport_bkmk_fp2p(file_pdf, dir_bkmk)
-
-# convert method
-# file_pdf = "C:\\Users\\shuji\\Desktop\\生物学大辞典.pdf"
-# dir_out = "C:\\Users\\shuji\\Desktop\\mutool_out1_draw_300dpi"
-# convert_pdf_to_imgs(file_pdf, dir_out)
-
-# extract method
-# file_pdf = "C:\\Users\\shuji\\Desktop\\mutool_out1.pdf"
-# dir_out = "C:\\Users\\shuji\\Desktop\\mutool_out1"
-# extract_pdf_to_imgs(file_pdf, dir_out)
-
-# auto extract/convert
-# file_pdf = "C:\\Users\\shuji\\Desktop\\生物学大辞典_part.pdf"
-# dir_out = "C:\\Users\\shuji\\Desktop\\生物学大辞典_part"
-# pdf_to_imgs(file_pdf, dir_out)
-
-# combine images to pdf
-# dir_imgs = "C:\\Users\\shuji\\Desktop\\mutool_out"
-# file_pdf = "C:\\Users\\shuji\\Desktop\\mutool_out.pdf"
-# combine_img_to_pdf(dir_imgs, file_pdf)
-
-# dir_imgs = "C:\\Users\\shuji\\Desktop\\汉语方言词汇_out"
-# combine_img_to_pdf_fp2p(dir_imgs, file_pdf)

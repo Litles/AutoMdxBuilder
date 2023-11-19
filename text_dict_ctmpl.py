@@ -101,7 +101,6 @@ class TextDictCtmpl:
         self.settings.build["global"]["name_abbr"] = name_abbr
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
-        os.remove(file_final_txt)
 
     def _make_entries_text(self, file_index, file_out):
         words = []

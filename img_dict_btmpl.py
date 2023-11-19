@@ -84,7 +84,7 @@ class ImgDictBtmpl:
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
+            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
             for t in pat_index.findall(text):
                 dct = {
                     "id": t[0],
@@ -115,7 +115,7 @@ class ImgDictBtmpl:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
         # 整理 index, 输出 index_all.txt
-        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
+        # dcts.sort(key=lambda dct: dct["id"], reverse=False)
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
             for dct in dcts:
                 if dct["page"] == 0:
@@ -130,7 +130,6 @@ class ImgDictBtmpl:
         self.settings.build["template"]["b"]["body_start"] = body_start
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
-        os.remove(file_final_txt)
 
     def _make_entries_with_navi(self, imgs, file_index_all, file_out):
         """ (二) 生成主体词条, 带层级导航 """
@@ -148,9 +147,9 @@ class ImgDictBtmpl:
                     part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
                     # 保留索引
                     if dct["level"] == -1:
-                        part_index = f'<div class="index-all">{str(dct["id"]).zfill(10)}|{dct["title"]}|{dct["body"]}</div>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}|{dct["body"]}</div>\n'
                     else:
-                        part_index = f'<div class="index-all">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}|{dct["body"]}</div>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}|{dct["body"]}</div>\n'
                     # top-navi-level 部分
                     part_top = '<div class="top-navi-level">'
                     part_top += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'

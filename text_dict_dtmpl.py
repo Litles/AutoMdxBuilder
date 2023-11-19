@@ -75,7 +75,7 @@ class TextDictDtmpl:
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all">(\d+)\|(.+?)</div>.+?(<div class="(entry-body|toc-list)">[^\r\n]+</div>)$', flags=re.M+re.S+re.I)
+            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.+?)</div>.+?(<div class="(entry-body|toc-list)">[^\r\n]+</div>)$', flags=re.M+re.S+re.I)
             for t in pat_index.findall(text):
                 if t[2].startswith('<div class="entry-body">'):
                     body = re.search(r'<div class="entry-body">(.+?)</div>$', t[2], flags=re.M+re.I).group(1)
@@ -104,7 +104,7 @@ class TextDictDtmpl:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
         # 整理 index, 输出 index_all.txt
-        dcts.sort(key=lambda dct: dct["id"], reverse=False)  # 升序整理
+        # dcts.sort(key=lambda dct: dct["id"], reverse=False)
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
             for dct in dcts:
                 if dct["body"] == '':
@@ -118,7 +118,6 @@ class TextDictDtmpl:
         self.settings.build["global"]["name_abbr"] = name_abbr
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
-        os.remove(file_final_txt)
 
     def _make_entries_text_with_navi(self, file_index_all, file_out):
         words = []
@@ -137,9 +136,9 @@ class TextDictDtmpl:
                     part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
                     # 保留索引
                     if dct["level"] == -1:
-                        part_index = f'<div class="index-all">{str(dct["id"]).zfill(10)}|{dct["title"]}</div>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}</div>\n'
                     else:
-                        part_index = f'<div class="index-all">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}</div>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}</div>\n'
                     # top-navi-level 部分
                     part_top = '<div class="top-navi-level">'
                     part_top += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'

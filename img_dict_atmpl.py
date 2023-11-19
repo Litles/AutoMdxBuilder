@@ -128,7 +128,7 @@ class ImgDictAtmpl:
         # 2.整理提取结果
         # (a) index.txt
         if len(index) != 0:
-            index.sort(key=lambda x: x["page"], reverse=False)
+            # index.sort(key=lambda x: x["page"], reverse=False)
             with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
                 for d in index:
                     fw.write(f'{d["name"]}\t{str(d["page"])}\n')
@@ -166,7 +166,6 @@ class ImgDictAtmpl:
             self.settings.build["template"]["a"].add(nl())
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
-        os.remove(file_final_txt)
 
     def _check_raw_files(self):
         """ 检查原材料
