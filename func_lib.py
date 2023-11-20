@@ -9,8 +9,8 @@ import os
 import re
 import shutil
 from datetime import datetime
-import chardet
-from colorama import init, Fore, Back, Style
+# import chardet
+from colorama import init, Fore
 import opencc
 
 
@@ -206,7 +206,7 @@ class FuncLib():
     def merge_to_index_all(self, file_toc, file_index, file_index_all):
         # 先将 toc 转成 index, 再将 index 扩展成 index_all
         if self.toc_to_index(file_toc, file_index_all):
-            pat = re.compile(r'^([^\t]+)\t([\-|\d]+)[\r\n]*$', flags=re.I)
+            pat = re.compile(r'^([^\t]+)\t([\-|\d]+)[\r\n]*$')
             # 1.读取 toc
             toc = []
             with open(file_index_all, 'r', encoding='utf-8') as fr:
@@ -481,11 +481,11 @@ class FuncLib():
                     dct["entry_list"] = False
         return done_flg, dcts
 
-    def _detect_code(self, text_file):
-        with open(text_file, 'rb') as frb:
-            data = frb.read()
-            dcts = chardet.detect(data)
-        return dcts["encoding"]
+    # def _detect_code(self, text_file):
+    #     with open(text_file, 'rb') as frb:
+    #         data = frb.read()
+    #         dcts = chardet.detect(data)
+    #     return dcts["encoding"]
 
     def _is_blank_file(self, text_file):
         blank_flg = False

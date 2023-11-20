@@ -8,7 +8,7 @@
 import os
 import re
 from tomlkit import dumps, loads, array, comment, nl
-from colorama import init, Fore, Back, Style
+from colorama import init, Fore
 from func_lib import FuncLib
 
 
@@ -86,7 +86,7 @@ class ImgDictAtmpl:
             # 识别 name_abbr, body_start
             body_start = 1
             names = []
-            for m in re.findall(r'^<div class="main-img"><img src="/([A-Z|\d]+)_A(\d+)\.\w+"></div>$', text, flags=re.M+re.I):
+            for m in re.findall(r'^<div class="main-img"><img src="/([A-Z|\d]+)_A(\d+)\.\w+"></div>$', text, flags=re.M):
                 if int(m[1])+1 > body_start:
                     body_start = int(m[1])+1
                 if m[0].upper() not in names:
@@ -98,15 +98,15 @@ class ImgDictAtmpl:
                 name_abbr = 'XXXXCD'
             # 提取 navi_items
             navi_items = array()
-            top_navi = re.search(r'^<div class="top-navi">(.*?)</div>$', text, flags=re.M+re.I)
-            for m in re.findall(r'<span class="navi-item"><a href="entry://[A-Z|\d]+_([^">]+)">([^<]+)</a></span>', top_navi[1], flags=re.I):
+            top_navi = re.search(r'^<div class="top-navi">(.*?)</div>$', text, flags=re.M)
+            for m in re.findall(r'<span class="navi-item"><a href="entry://[A-Z|\d]+_([^">]+)">([^<]+)</a></span>', top_navi[1]):
                 if m[1] != '🕮':
                     navi_items.add_line({"a": m[1], "ref": m[0]})
             # 提取 index, toc, syns
             index = []
             toc = []
             syns = []
-            for m in re.findall(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', text, flags=re.M+re.I):
+            for m in re.findall(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', text, flags=re.M):
                 # 区分: 索引, 目录, 同义词
                 dct = {}
                 if m[1].startswith(name_abbr+'_'):
@@ -138,7 +138,7 @@ class ImgDictAtmpl:
                 # 获取TOC总目录词条
                 toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
                 if toc_entry:
-                    for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M+re.I):
+                    for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M):
                         p = 0
                         for d in toc:
                             if m[1] == d["name"]:
@@ -158,7 +158,7 @@ class ImgDictAtmpl:
         self.settings.build["template"]["a"]["body_start"] = body_start
         if len(navi_items) > 0:
             build_str = re.sub(r'[\r\n]+#navi_items = \[.*?#\][^\r\n]*?', '', dumps(self.settings.build), flags=re.S+re.I)
-            build_str = re.sub(r'[\r\n]+#\s*?（可选）导航栏链接.+$', '', build_str, flags=re.M+re.I)
+            build_str = re.sub(r'[\r\n]+#\s*?（可选）导航栏链接.+$', '', build_str, flags=re.M)
             self.settings.build = loads(build_str)
             self.settings.build["template"]["a"].add(comment("（可选）导航栏链接, 有目录 (toc.txt) 就可以设置"))
             self.settings.build["template"]["a"].add("navi_items", navi_items.multiline(True))

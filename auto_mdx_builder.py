@@ -8,7 +8,7 @@
 import os
 import re
 import shutil
-from colorama import init, Fore, Back, Style
+from colorama import init, Fore
 from settings import Settings
 from func_lib import FuncLib
 from img_dict_atmpl import ImgDictAtmpl
@@ -163,7 +163,7 @@ class AutoMdxBuilder:
                 fname = os.path.split(p)[1]
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
                 dpi = input("请输入要生成图片的 DPI（回车则默认300）: ").strip('"/\\')
-                if re.match(r'^\d+$', dpi, flags=re.I):
+                if re.match(r'^\d+$', dpi):
                     toolkit.convert_pdf_to_imgs(p, out_dir, int(dpi))
                 else:
                     toolkit.convert_pdf_to_imgs(p, out_dir)
@@ -288,9 +288,9 @@ class AutoMdxBuilder:
             with open(file_final_txt, 'r', encoding='utf-8') as fr:
                 text = ''
                 for line in fr:
-                    if re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line, flags=re.I):
-                        eid = re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line, flags=re.I).group(1)
-                    elif not re.match(r'^</>\s*$', line, flags=re.I):
+                    if re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line):
+                        eid = re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line).group(1)
+                    elif not re.match(r'^</>\s*$', line):
                         text += line
                     else:
                         text += line
@@ -312,7 +312,7 @@ class AutoMdxBuilder:
             multi_mdd_flg = False
             mdd_names = [mname]
             for fname in os.listdir(cur_dir):
-                if re.search(r'\.\d+\.mdd$', fname, flags=re.I):
+                if re.search(r'\.\d+\.mdd$', fname.lower()):
                     multi_mdd_flg = True
                     mdd_names.append(fname)
             # 按检查结果区分处理
@@ -344,7 +344,7 @@ class AutoMdxBuilder:
                     n = 0
                     for line in fr:
                         n += 1
-                        if re.match(r'^</>\s*$', line, flags=re.I):
+                        if re.match(r'^</>\s*$', line):
                             fw.write(f'<div class="entry-id" style="display:none;">{str(n).zfill(8)}</div>\n')
                         fw.write(line)
             os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{tmp_final_txt}" "{ftitle}.mdx"')
@@ -557,7 +557,7 @@ class AutoMdxBuilder:
             try:
                 with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16le') as fr:
                     text = fr.read()
-                    line_num = len(re.findall(r'^', text, flags=re.I+re.M))
+                    line_num = len(re.findall(r'^', text, flags=re.M))
                     if line_num <= 3:
                         print(Fore.YELLOW + "INFO: " + Fore.RESET + "未识别到目录, 将不会生成 toc.txt")
                     else:
@@ -569,7 +569,7 @@ class AutoMdxBuilder:
                 os.system(f'copy /y "{os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt")}" "{os.path.join(out_dir, "[utf-16]toc.txt")}"')
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "书签中存在无法识别的字符, 已输出为 utf-16 编码")
             with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r', encoding='utf-16le') as fr:
-                mt = re.search(r'(?<=BasePage=)(\d+)', fr.read(), flags=re.I)
+                mt = re.search(r'(?<=BasePage=)(\d+)', fr.read())
                 if mt:
                     body_start = mt.group(0)
                 else:
@@ -604,8 +604,8 @@ class AutoMdxBuilder:
             if os.path.isfile(bkmk_itf):
                 with open(bkmk_itf, 'r', encoding='utf-16le') as fr:
                     text = fr.read()
-                    mt_body_start = re.search(r'(?<=TextPage=)(\d+)', text, flags=re.I)
-                    mt_name = re.search(r'(?<=Title=)(.+)', text, flags=re.I)
+                    mt_body_start = re.search(r'(?<=TextPage=)(\d+)', text)
+                    mt_name = re.search(r'(?<=Title=)(.+)', text)
                     if mt_body_start:
                         body_start = mt_body_start.group(0)
                     else:
@@ -650,7 +650,7 @@ class AutoMdxBuilder:
         os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt")}" "{os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt")}"')
         # 1.生成临时书签
         with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-16le') as fr:
-            text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start), fr.read(), flags=re.I)
+            text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start), fr.read())
             fr.seek(0)
             fr.truncate()
             fr.write(text)
@@ -710,10 +710,10 @@ def print_menu():
     print(Fore.CYAN + "  31" + Fore.RESET + ".从原材料还原 PDF")
     print(Fore.CYAN + "  32" + Fore.RESET + ".从 index_all.txt 还原 toc_all.txt")
     print("\n(四) 其他工具")
-    print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片（mutool）")
-    print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片（mutool）")
-    print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成 PDF（mutool）")
-    print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入（FreePic2Pdf）")
+    print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片 (mutool)")
+    print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片 (mutool)")
+    print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成 PDF (mutool)")
+    print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
     # print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
 
 

@@ -9,7 +9,7 @@ import os
 import re
 import shutil
 import time
-import codecs
+# import codecs
 from pywinauto.application import Application
 from pywinauto.keyboard import send_keys
 from pywinauto.timings import Timings
@@ -36,7 +36,7 @@ def pdf_to_imgs(file_pdf, dir_out):
     img_pdf_flg = True
     os.system(f'{file_exe} draw -o {tmp_txt} -F text {file_pdf} 2-11')
     with open(tmp_txt, 'r', encoding='utf-8') as fr:
-        word = re.sub(r'[\r\n\s]', '', fr.read(), flags=re.I)
+        word = re.sub(r'[\r\n\s]', '', fr.read())
         if len(word) > 50:
             img_pdf_flg = False
     # 开始处理
@@ -246,7 +246,7 @@ def combine_img_to_pdf_fp2p(dir_imgs, file_pdf):
     file_ini = os.path.join(dir_program, 'FreePic2Pdf.ini')
     with open(file_ini_bak, 'r', encoding='utf-16le') as fr:
         para_item = 'PARA_DIR_SRC='+dir_imgs.replace('\\', '\\\\')
-        text = re.sub(r'^PARA_DIR_SRC=.+$', para_item, fr.read(), flags=re.M+re.I)
+        text = re.sub(r'^PARA_DIR_SRC=.+$', para_item, fr.read(), flags=re.M)
         with open(file_ini, 'w', encoding='utf-16le') as fw:
             fw.write(text)
     # 1.启动 FreePic2Pdf 程序
@@ -278,7 +278,7 @@ def convert_pdg_to_img(dir_pdg, dir_out):
     file_ini = os.path.join(dir_program, 'Pdg2Pic.ini')
     with open(file_ini_bak, 'r', encoding='utf-16le') as fr:
         para_item = 'PARA_DIR_TGT='+dir_out.replace('\\', '\\\\')
-        text = re.sub(r'^PARA_DIR_TGT=.+$', para_item, fr.read(), flags=re.M+re.I)
+        text = re.sub(r'^PARA_DIR_TGT=.+$', para_item, fr.read(), flags=re.M)
         with open(file_ini, 'w', encoding='utf-16le') as fw:
             fw.write(text)
     # 1.启动 Pdg2Pic 程序
@@ -372,9 +372,9 @@ def eximport_bkmk_fp2p(file_pdf, dir_bkmk, export_flg=True):
         #         bkmk_itf = encoded_text[len(bom):].decode('utf-16le')
         #     else:
         #         bkmk_itf = encoded_text.decode('utf-16le')
-        #     base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf, flags=re.I)
+        #     base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf)
         #     if base_page:
-        #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.I+re.M)
+        #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.M)
         # with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'rb') as frb:
         #     encoded_text = frb.read()
         #     bom = codecs.BOM_UTF16_LE
@@ -385,9 +385,9 @@ def eximport_bkmk_fp2p(file_pdf, dir_bkmk, export_flg=True):
         # [备用2]考虑是否一律转utf-8
         # with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r', encoding='utf-16') as fr:
         #     bkmk_itf = fr.read()
-        #     base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf, flags=re.I)
+        #     base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf)
         #     if base_page:
-        #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.I+re.M)
+        #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.M)
         # with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16') as fr:
         #     bkmk_text = fr.read()
         # dir_bkmk_bk = os.path.join('lib', 'bkmk')
@@ -399,9 +399,9 @@ def eximport_bkmk_fp2p(file_pdf, dir_bkmk, export_flg=True):
         #     fw.write(bkmk_text)
         with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-16le') as fr:
             bkmk_itf = fr.read()
-            base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf, flags=re.I)
+            base_page = re.search(r'(?<=BasePage=)(\d+)', bkmk_itf)
             if base_page:
-                bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.I+re.M)
+                bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.M)
             fr.seek(0)
             fr.truncate()
             fr.write(bkmk_itf)

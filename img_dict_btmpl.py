@@ -8,7 +8,7 @@
 import os
 import re
 from tomlkit import dumps
-from colorama import init, Fore, Back, Style
+from colorama import init, Fore
 from func_lib import FuncLib
 
 
@@ -84,7 +84,7 @@ class ImgDictBtmpl:
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M+re.I)
+            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M)
             for t in pat_index.findall(text):
                 dct = {
                     "id": t[0],
@@ -94,7 +94,7 @@ class ImgDictBtmpl:
                 dcts.append(dct)
             # 2.提取 syns, 并同时输出 syns.txt
             syns_flg = False
-            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M+re.I)
+            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M)
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
                 for t in pat_syn.findall(text):
                     fw.write(f'{t[0]}\t{t[1]}\n')
@@ -104,7 +104,7 @@ class ImgDictBtmpl:
             # 3.识别 name_abbr, body_start
             body_start = 1
             names = []
-            for m in re.findall(r'^([A-Z|\d]+)_A(\d+)[\r\n]+<link rel="stylesheet"', text, flags=re.M+re.I):
+            for m in re.findall(r'^([A-Z|\d]+)_A(\d+)[\r\n]+<link rel="stylesheet"', text, flags=re.M):
                 if m[0].upper() not in names:
                     names.append(m[0].upper())
                 if int(m[1])+1 > body_start:
