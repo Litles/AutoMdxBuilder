@@ -15,7 +15,7 @@ class Settings:
     # 【提示】 AMB 1.4 及以后的版本已不在此处配置词典, 请移步 build.toml 文件
     def __init__(self):
         # 程序版本
-        self.version = '1.4'
+        self.version = '1.5'
 
         # 输入文件
         self.dname_imgs = 'imgs'

@@ -86,7 +86,7 @@ class ImgDictAtmpl:
             # 识别 name_abbr, body_start
             body_start = 1
             names = []
-            for m in re.findall(r'^<div class="main-img"><img src="/([A-Z|\d]+)_A(\d+)\.\w+"></div>$', text, flags=re.M):
+            for m in re.findall(r'^<div class="main-img"><div class="left"><div class="pic"><img src="/([A-Z|\d]+)_A(\d+)\.\w+">', text, flags=re.M):
                 if int(m[1])+1 > body_start:
                     body_start = int(m[1])+1
                 if m[0].upper() not in names:
@@ -128,7 +128,7 @@ class ImgDictAtmpl:
         # 2.整理提取结果
         # (a) index.txt
         if len(index) != 0:
-            # index.sort(key=lambda x: x["page"], reverse=False)
+            index.sort(key=lambda x: x["page"], reverse=False)
             with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
                 for d in index:
                     fw.write(f'{d["name"]}\t{str(d["page"])}\n')

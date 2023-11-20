@@ -280,27 +280,40 @@ class AutoMdxBuilder:
                 if os.path.isfile(fp):
                     fp_new = fp.replace('.mdx', '')
                     os.rename(fp, fp_new)
-            # 按编号精准还原源 txt
-            xname = os.path.split(mfile)[1]
-            file_final_txt = os.path.join(out_dir, xname.split('.')[0]+'.txt')
-            entries = []
-            eid = ''
-            with open(file_final_txt, 'r', encoding='utf-8') as fr:
+            # 分析 info 信息, 确定是否支持词条顺序的还原
+            order_flg = False
+            for f in os.listdir(out_dir):
+                fp = os.path.join(out_dir, f)
                 text = ''
-                for line in fr:
-                    if re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line):
-                        eid = re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line).group(1)
-                    elif not re.match(r'^</>\s*$', line):
-                        text += line
-                    else:
-                        text += line
-                        entries.append({"eid": eid, "text": text})
-                        text = ''
-            if eid != '':
-                entries.sort(key=lambda x: x["eid"], reverse=False)
-                with open(file_final_txt, 'w', encoding='utf-8') as fw:
-                    for entry in entries:
-                        fw.write(entry["text"])
+                if fp.endswith('.description.html'):
+                    with open(fp, 'r', encoding='utf-8') as fr:
+                        if re.search(r'<div><br/>[^><]*?, (packed|built) with AutoMdxBuilder[^><]*?\.<br/></div>', fr.read(), flags=re.I):
+                            # 符合条件, 支持词条顺序的还原
+                            order_flg = True
+                            break
+            if order_flg:
+                # 按编号精准还原源 txt
+                xname = os.path.split(mfile)[1]
+                file_final_txt = os.path.join(out_dir, xname.split('.')[0]+'.txt')
+                entries = []
+                eid = '99999999'
+                with open(file_final_txt, 'r', encoding='utf-8') as fr:
+                    text = ''
+                    for line in fr:
+                        if re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line):
+                            eid = re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line).group(1)
+                        elif not re.match(r'^</>\s*$', line):
+                            text += line
+                        else:
+                            text += line
+                            entries.append({"eid": eid, "text": text})
+                            eid = '99999999'
+                            text = ''
+                if eid != '':
+                    entries.sort(key=lambda x: x["eid"], reverse=False)
+                    with open(file_final_txt, 'w', encoding='utf-8') as fw:
+                        for entry in entries:
+                            fw.write(entry["text"])
             else:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "检测到词典并非由 AMB 生成, 不保证词条顺序的准确还原")
         elif os.path.isfile(mfile) and mfile.endswith('.mdd'):
@@ -342,10 +355,14 @@ class AutoMdxBuilder:
             with open(file_final_txt, 'r', encoding='utf-8') as fr:
                 with open(tmp_final_txt, 'w', encoding='utf-8') as fw:
                     n = 0
+                    link_flg = False
                     for line in fr:
-                        n += 1
-                        if re.match(r'^</>\s*$', line):
+                        if re.match(r'^@@@LINK=', line, flags=re.I):
+                            link_flg = True
+                        if (not link_flg) and re.match(r'^</>\s*$', line):
+                            n += 1
                             fw.write(f'<div class="entry-id" style="display:none;">{str(n).zfill(8)}</div>\n')
+                            link_flg = False
                         fw.write(line)
             os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{tmp_final_txt}" "{ftitle}.mdx"')
         else:
@@ -484,7 +501,7 @@ class AutoMdxBuilder:
             fp = os.path.join(tmp_xdir, f)
             text = ''
             if fp.endswith('.description.html'):
-                with open(fp, 'r+', encoding='utf-8') as fr:
+                with open(fp, 'r', encoding='utf-8') as fr:
                     pat = re.compile(r'<div><br/>([^><]*?), built with AutoMdxBuilder[^><]*?based on template ([A-D])\.<br/></div>', flags=re.I)
                     text = fr.read()
                     if pat.search(text):
@@ -649,7 +666,7 @@ class AutoMdxBuilder:
         os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf")}" "{os.path.join(dir_bkmk, "FreePic2Pdf.itf")}"')
         os.system(f'copy /y "{os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt")}" "{os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt")}"')
         # 1.生成临时书签
-        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-16le') as fr:
+        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-8') as fr:
             text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start), fr.read())
             fr.seek(0)
             fr.truncate()
@@ -659,7 +676,7 @@ class AutoMdxBuilder:
             if fname == 'toc.txt':
                 with open(os.path.join(dir_amb, fname), 'r', encoding='utf-8') as fr:
                     text = fr.read()
-                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-16le') as fr:
+                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-8') as fr:
                     fr.seek(0)
                     fr.truncate()
                     fr.write(text)
@@ -670,7 +687,7 @@ class AutoMdxBuilder:
                 if self.func.index_to_toc(os.path.join(dir_amb, fname), toc_tmp):
                     with open(toc_tmp, 'r', encoding='utf-8') as fr:
                         text = fr.read()
-                    with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-16le') as fr:
+                    with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-8') as fr:
                         fr.seek(0)
                         fr.truncate()
                         fr.write(text)

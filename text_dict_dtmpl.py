@@ -104,7 +104,7 @@ class TextDictDtmpl:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
         # 整理 index, 输出 index_all.txt
-        # dcts.sort(key=lambda dct: dct["id"], reverse=False)
+        dcts.sort(key=lambda dct: dct["id"], reverse=False)
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
             for dct in dcts:
                 if dct["body"] == '':

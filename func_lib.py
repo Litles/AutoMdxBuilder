@@ -31,7 +31,10 @@ class FuncLib():
             for i in range(p_total):
                 img = imgs[i]
                 part_title = f'{img["title"]}\n'
-                part_img = f'<div class="main-img"><img src="/{img["name"]}"></div>\n'
+                part_img = '<div class="main-img">'
+                part_img += f'<div class="left"><div class="pic"><img src="/{img["name"]}"></div></div>'
+                part_img += f'<div class="right"><div class="pic"><img src="/{img["name"]}"></div></div>'
+                part_img += '</div>\n'
                 # 生成翻页部分(首末页特殊)
                 # 备用: [☚,☛] [☜,☞] [◀,▶] [上一页,下一页] [☚&#12288;&#8197;,&#8197;&#12288;☛]
                 if i == 0:

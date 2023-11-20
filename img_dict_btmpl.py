@@ -115,7 +115,7 @@ class ImgDictBtmpl:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
         # 整理 index, 输出 index_all.txt
-        # dcts.sort(key=lambda dct: dct["id"], reverse=False)
+        dcts.sort(key=lambda dct: dct["id"], reverse=False)
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
             for dct in dcts:
                 if dct["page"] == 0:
@@ -169,7 +169,10 @@ class ImgDictBtmpl:
                     if dct["level"] != -1 and dct["body"] == 0:
                         part_img = ''
                     else:
-                        part_img = f'<div class="main-img"><img src="/{imgs[i]["name"]}"></div>\n'
+                        part_img = '<div class="main-img">'
+                        part_img += f'<div class="left"><div class="pic"><img src="/{imgs[i]["name"]}"></div></div>'
+                        part_img += f'<div class="right"><div class="pic"><img src="/{imgs[i]["name"]}"></div></div>'
+                        part_img += '</div>\n'
                     # bottom-navi 部分
                     if i == 0:
                         part_left = ''

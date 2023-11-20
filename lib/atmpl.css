@@ -51,18 +51,31 @@ span.navi-item-right{
 }
 
 /*----------词条------------*/
-/*图片*/
+/*---图片---*/
 div.main-img img{
     text-align: center;
     width: 100%;
 }
-/*目录标题*/
+/*图片自适应单双栏 (如不需要则注释下面两段, 并开启 display:none 那行)*/
+@media screen and (max-width:720px) {
+div.main-img {width: 100%;overflow:hidden;}
+div.main-img div.left{position:relative;width: 200%;z-index:2;}
+div.main-img div.right{position:relative;width: 200%;margin-left:-100%;z-index:1;}
+}   /*【额外pic设置】div.main-img div.pic{clip-path: polygon(0 0, 100% 0, 100% 94%, 0 95%);margin-top: 0.5em;}*/  /* margin-bottom: -4.5em; */
+@media screen and (min-width:721px) {
+div.main-img{width:100%;overflow:hidden;margin-top: 0.5em;}
+div.main-img div.left{position:relative;display:hidden;margin:0;padding:0;}
+div.main-img div.right{position:relative;width:100%; display: none;} 
+}   /* 【right部分】高度H÷宽度W   margin-top: -147.3235%; */
+/*div.main-img div.right {display:none;}*/
+
+/*---目录标题---*/
 div.toc-title {
     text-align: center;
     margin-bottom: 8px;
     font-weight: bold;
     font-size: 120%;
 }
-/*目录链接*/
+/*---目录链接---*/
 div.toc-text a:link {color: blue;}
 div.toc-text a:hover {background:yellow;}
