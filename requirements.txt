@@ -4,3 +4,5 @@ mdict-utils==1.3.12
 OpenCC==1.1.1
 Pillow==10.1.0
 pywinauto==0.6.8
+pywin32==306
+pywin32-ctypes==0.2.2
