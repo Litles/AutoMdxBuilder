@@ -15,6 +15,8 @@ from img_dict_atmpl import ImgDictAtmpl
 from img_dict_btmpl import ImgDictBtmpl
 from text_dict_ctmpl import TextDictCtmpl
 from text_dict_dtmpl import TextDictDtmpl
+import sys
+from mdict_utils.__main__ import run as mdict_cmd
 import toolkit
 
 
@@ -269,12 +271,20 @@ class AutoMdxBuilder:
         if done_flg:
             print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
 
+    def _mdict(self, parms):
+        """ 执行 mdict-utils 程序 """
+        saved_parms = sys.argv[1:]
+        sys.argv[1:] = parms
+        mdict_cmd()
+        sys.argv[1:] = saved_parms
+
     def _export_mdx(self, mfile):
         """ 解包 mdx/mdd (取代 MdxExport.exe) """
         done_flg = True
         if os.path.isfile(mfile) and mfile.endswith('.mdx'):
             out_dir = os.path.splitext(mfile)[0]
-            os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
+            self._mdict(['-x', mfile, '-d', out_dir])
+            # os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
             for fname in os.listdir(out_dir):
                 fp = os.path.join(out_dir, fname)
                 if os.path.isfile(fp):
@@ -334,9 +344,11 @@ class AutoMdxBuilder:
                 mdd_names.sort()
                 for mdd_name in mdd_names:
                     print(f"开始解压 '{mdd_name}' :\n")
-                    os.system(f'mdict -x "{os.path.join(cur_dir, mdd_name)}" -d "{out_dir}"')
+                    self._mdict(['-x', os.path.join(cur_dir, mdd_name), '-d', out_dir])
+                    # os.system(f'mdict -x "{os.path.join(cur_dir, mdd_name)}" -d "{out_dir}"')
             else:
-                os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
+                self._mdict(['-x', mfile, '-d', out_dir])
+                # os.system(f'mdict -x "{mfile}" -d "{out_dir}"')
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
             done_flg = False
@@ -364,7 +376,8 @@ class AutoMdxBuilder:
                             fw.write(f'<div class="entry-id" style="display:none;">{str(n).zfill(8)}</div>\n')
                             link_flg = False
                         fw.write(line)
-            os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{tmp_final_txt}" "{ftitle}.mdx"')
+            self._mdict(['--description', file_dict_info, '--encoding', 'utf-8', '-a', tmp_final_txt, ftitle+'mdx'])
+            # os.system(f'mdict --description "{file_dict_info}" --encoding utf-8 -a "{tmp_final_txt}" "{ftitle}.mdx"')
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {file_final_txt} 或 {file_dict_info} 不存在")
             mdx_flg = False
@@ -444,9 +457,11 @@ class AutoMdxBuilder:
                         os.rename(sd, os.path.join(tmp_dir, os.path.split(sd)[1]))
                     # 移完之后打包
                     if mdd_rk == 0:
-                        os.system(f'mdict -a "{tmp_dir}" "{ftitle}.mdd"')
+                        self._mdict(['-a', tmp_dir, ftitle+'.mdd'])
+                        # os.system(f'mdict -a "{tmp_dir}" "{ftitle}.mdd"')
                     else:
-                        os.system(f'mdict -a "{tmp_dir}" "{ftitle}.{str(mdd_rk)}.mdd"')
+                        self._mdict(['-a', tmp_dir, f'{ftitle}.{str(mdd_rk)}.mdd'])
+                        # os.system(f'mdict -a "{tmp_dir}" "{ftitle}.{str(mdd_rk)}.mdd"')
                     # 打包完再移回去
                     for fname in os.listdir(tmp_dir):
                         os.rename(os.path.join(tmp_dir, fname), os.path.join(dir_data, fname))
@@ -464,7 +479,8 @@ class AutoMdxBuilder:
                 if len(os.listdir(tmp_dir)) == 0:
                     pass
                 else:
-                    os.system(f'mdict -a "{tmp_dir}" "{ftitle}.{str(mdd_rk)}.mdd"')
+                    self._mdict(['-a', tmp_dir, f'{ftitle}.{str(mdd_rk)}.mdd'])
+                    # os.system(f'mdict -a "{tmp_dir}" "{ftitle}.{str(mdd_rk)}.mdd"')
                     # 移回去
                     for fname in os.listdir(tmp_dir):
                         os.rename(os.path.join(tmp_dir, fname), os.path.join(dir_data, fname))
@@ -472,7 +488,8 @@ class AutoMdxBuilder:
                 if os.path.exists(tmp_dir):
                     os.rmdir(tmp_dir)
             else:
-                os.system(f'mdict -a "{dir_data}" "{ftitle}.mdd"')
+                self._mdict(['-a', dir_data, ftitle+'.mdd'])
+                # os.system(f'mdict -a "{dir_data}" "{ftitle}.mdd"')
         return done_flg
 
     def _restore_raw(self, xfile, outside_flg):
@@ -495,7 +512,6 @@ class AutoMdxBuilder:
         os.system(f'copy /y "{xfile}" "{tmp_xfile}"')
         if self._export_mdx(tmp_xfile):
             tmp_final_txt = os.path.join(tmp_xdir, fname.split('.')[0]+'.txt')
-        # os.system(f'mdict -x "{xfile}" -d "{out_dir}"')
         # 分析 info 信息, 确定是否支持还原
         for f in os.listdir(tmp_xdir):
             fp = os.path.join(tmp_xdir, f)
@@ -541,12 +557,14 @@ class AutoMdxBuilder:
                 dir_data = os.path.join(out_dir, "imgs")
                 if os.path.exists(dir_data):
                     shutil.rmtree(dir_data)
-                os.system(f'mdict -x "{file_mdd}" -d "{dir_data}"')
+                self._mdict(['-x', file_mdd, '-d', dir_data])
+                # os.system(f'mdict -x "{file_mdd}" -d "{dir_data}"')
             elif os.path.isfile(file_mdd) and templ_choice in ('C', 'D'):
                 dir_data = os.path.join(out_dir, "data")
                 if os.path.exists(dir_data):
                     shutil.rmtree(dir_data)
-                os.system(f'mdict -x "{file_mdd}" -d "{dir_data}"')
+                self._mdict(['-x', file_mdd, '-d', dir_data])
+                # os.system(f'mdict -x "{file_mdd}" -d "{dir_data}"')
             else:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
             print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
