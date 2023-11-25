@@ -18,6 +18,7 @@ class FuncLib():
     """ functions for usage """
     def __init__(self, amb):
         self.settings = amb.settings
+        init(autoreset=True)
 
     def make_entries_img(self, proc_flg_toc, file_out):
         """ (一) 生成图像词条 """
@@ -321,8 +322,6 @@ class FuncLib():
 
     def generate_info_html(self, dict_name, file_info_raw, templ_choice):
         # 创建好临时文件夹
-        if not os.path.exists(self.settings.dir_output_tmp):
-            os.makedirs(self.settings.dir_output_tmp)
         file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
         if os.path.isfile(file_info):
             os.remove(file_info)
@@ -557,7 +556,7 @@ class FuncLib():
             # 复制新文件到输出文件夹
             img_file_new = os.path.join(dir_imgs_out, f_title_new+f_ext)
             if copy_flg:
-                os.system(f'copy /y "{img_file}" "{img_file_new}"')
+                shutil.copy(img_file, img_file_new)
         return dir_imgs_out, imgs, n_len
 
     def _generate_navi_middle(self, proc_flg_toc):

@@ -17,6 +17,7 @@ class TextDictCtmpl:
     def __init__(self, amb):
         self.settings = amb.settings
         self.func = FuncLib(amb)
+        init(autoreset=True)
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
@@ -25,9 +26,7 @@ class TextDictCtmpl:
         # 开始制作
         if self.proc_flg:
             print('\n材料检查通过, 开始制作词典……\n')
-            # 创建临时输出目录, 并清空目录下所有文件
-            if not os.path.exists(self.settings.dir_output_tmp):
-                os.makedirs(self.settings.dir_output_tmp)
+            # 清空临时目录下所有文件
             for fname in os.listdir(self.settings.dir_output_tmp):
                 fpath = os.path.join(self.settings.dir_output_tmp, fname)
                 if os.path.isfile(fpath):
@@ -55,11 +54,7 @@ class TextDictCtmpl:
             # 合并成最终 txt 源文本
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
             entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
-            print(f'\n最终源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
-            # 生成 css 文件
-            file_css = os.path.join(self.settings.dir_lib, self.settings.css_ctmpl)
-            file_css_out = os.path.join(self.settings.dir_output_tmp, self.settings.fname_css)
-            os.system(f'copy /y "{file_css}" "{file_css_out}"')
+            print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # 生成 info.html
             file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
             file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, 'C')

@@ -69,15 +69,15 @@ class AutoMdxBuilder:
             done_flg = toolkit.pack_to_mdd(dir_data, None)
             if done_flg:
                 print(Fore.GREEN + "\n打包完毕。")
-        elif sel == 10:
-            # --- 从 PDF文件/pdg文件夹 生成预备原材料 ---
-            p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"\\').rstrip('/')
-            if os.path.isfile(p) and os.path.splitext(p)[1] == '.pdf':
-                self.pdf_to_amb(p)
-            elif os.path.isdir(p):
-                self.pdf_to_amb(p, False)
-            else:
-                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+        # elif sel == 10:
+        #     # --- 从 PDF文件/pdg文件夹 生成预备原材料 ---
+        #     p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"\\').rstrip('/')
+        #     if os.path.isfile(p) and os.path.splitext(p)[1] == '.pdf':
+        #         self.pdf_to_amb(p)
+        #     elif os.path.isdir(p):
+        #         self.pdf_to_amb(p, False)
+        #     else:
+        #         print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 11:
             # --- 从 toc_all.txt 生成 index_all.txt ---
             file_toc_all = input("请输入 toc_all.txt 的文件路径: ").strip('"')
@@ -124,21 +124,21 @@ class AutoMdxBuilder:
                     print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 mdx 文件")
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
-        elif sel == 31:
-            # --- 从原材料还原 PDF ---
-            p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"\\').rstrip('/')
-            if os.path.split(p)[1] == 'build.toml':
-                if self.settings.load_build_toml(p, True):
-                    self.amb_to_pdf(file_toml, False)
-            elif os.path.isdir(p):
-                file_toml = os.path.join(p, 'build.toml')
-                if os.path.isfile(file_toml):
-                    if self.settings.load_build_toml(file_toml, True):
-                        self.amb_to_pdf(file_toml, True)
-                else:
-                    print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 build.toml 文件")
-            else:
-                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+        # elif sel == 31:
+        #     # --- 从原材料还原 PDF ---
+        #     p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"\\').rstrip('/')
+        #     if os.path.split(p)[1] == 'build.toml':
+        #         if self.settings.load_build_toml(p, True):
+        #             self.amb_to_pdf(file_toml, False)
+        #     elif os.path.isdir(p):
+        #         file_toml = os.path.join(p, 'build.toml')
+        #         if os.path.isfile(file_toml):
+        #             if self.settings.load_build_toml(file_toml, True):
+        #                 self.amb_to_pdf(file_toml, True)
+        #         else:
+        #             print(Fore.RED + "ERROR: " + Fore.RESET + "文件夹内未找到 build.toml 文件")
+        #     else:
+        #         print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 32:
             # --- 从 index_all.txt 还原 toc_all.txt ---
             file_index_all = input("请输入 index_all.txt 的文件路径: ").strip('"')
@@ -177,18 +177,18 @@ class AutoMdxBuilder:
                 toolkit.combine_img_to_pdf(p, out_file)
             else:
                 print(Fore.RED + "\n输入的路径有误")
-        elif sel == 44:
-            # --- PDF 书签导出/导入（FreePic2Pdf） ---
-            file_pdf = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
-            dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"\\').rstrip('/')
-            if os.path.isdir(dir_bkmk):
-                toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk, False)
-            elif dir_bkmk is None or len(dir_bkmk) == 0:
-                fname = os.path.split(file_pdf)[1]
-                dir_bkmk = os.path.join(os.path.split(file_pdf)[0], fname.split('.')[0]+'_bkmk')
-                toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk)
-            else:
-                print(Fore.RED + "\n输入的路径有误")
+        # elif sel == 44:
+        #     # --- PDF 书签导出/导入（FreePic2Pdf） ---
+        #     file_pdf = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
+        #     dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"\\').rstrip('/')
+        #     if os.path.isdir(dir_bkmk):
+        #         toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk, False)
+        #     elif dir_bkmk is None or len(dir_bkmk) == 0:
+        #         fname = os.path.split(file_pdf)[1]
+        #         dir_bkmk = os.path.join(os.path.split(file_pdf)[0], fname.split('.')[0]+'_bkmk')
+        #         toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk)
+        #     else:
+        #         print(Fore.RED + "\n输入的路径有误")
         else:
             pass
 
@@ -500,20 +500,20 @@ def print_menu():
     print(Fore.CYAN + "  2" + Fore.RESET + ".将源 txt 文件打包成 mdx 文件")
     print(Fore.CYAN + "  3" + Fore.RESET + ".将资料包文件夹打包成 mdd 文件")
     print("\n(一) 准备原材料")
-    print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)")
+    # print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)")
     print(Fore.CYAN + "  11" + Fore.RESET + ".从 toc_all.txt 生成 index_all.txt")
     print(Fore.CYAN + "  12" + Fore.RESET + ".合并 toc.txt 和 index.txt 为 index_all.txt")
     print("\n(二) 制作词典")
     print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典" + Fore.YELLOW + " (需准备好原材料)")
     print("\n(三) 还原词典")
     print(Fore.CYAN + "  30" + Fore.RESET + ".从词典还原原材料" + Fore.YELLOW + " (仅支持 AMB 1.4 以上版本)")
-    print(Fore.CYAN + "  31" + Fore.RESET + ".从原材料还原 PDF")
+    # print(Fore.CYAN + "  31" + Fore.RESET + ".从原材料还原 PDF")
     print(Fore.CYAN + "  32" + Fore.RESET + ".从 index_all.txt 还原 toc_all.txt")
     print("\n(四) 其他工具")
     print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片 (MuPDF)")
     print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片 (MuPDF)")
     print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成 PDF (MuPDF)")
-    print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
+    # print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
     # print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
 
 

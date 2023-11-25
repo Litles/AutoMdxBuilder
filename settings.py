@@ -6,9 +6,10 @@
 # @Version : 1.5
 
 import os
-from tomllib import load
+from tomli import load
 from tomlkit import loads
 from colorama import init, Fore
+
 
 class Settings:
     """ 词典设置 """
@@ -27,7 +28,10 @@ class Settings:
         self.fname_dict_info = 'info.html'
 
         # 输出文件
-        self.dir_output_tmp = '_tmp'
+        cur_path = os.getcwd()
+        self.dir_output_tmp = os.path.join(cur_path, '_tmp')
+        if not os.path.exists(self.dir_output_tmp):
+            os.makedirs(self.dir_output_tmp)
         self.fname_entries_text = 'entries_text.txt'
         self.fname_entries_img = 'entries_img.txt'
         self.fname_entry_toc = 'entry_toc.txt'
@@ -41,7 +45,7 @@ class Settings:
         self.fname_toc_all = 'toc_all.txt'
 
         # 预设样式/模板
-        self.dir_lib = 'lib'
+        self.dir_lib = os.path.join(cur_path, 'lib')
         self.build_tmpl = 'build.toml'
         self.css_atmpl = 'atmpl.css'
         self.css_btmpl = 'btmpl.css'

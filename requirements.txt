@@ -1,8 +1,10 @@
 colorama==0.4.6
 tomlkit==0.12.2
+tomli==2.0.1
 mdict-utils==1.3.12
 OpenCC==1.1.1
 Pillow==10.1.0
+PyMuPDF==1.23.6
 pywinauto==0.6.8
 pywin32==306
 pywin32-ctypes==0.2.2
