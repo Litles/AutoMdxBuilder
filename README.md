@@ -1,5 +1,5 @@
 ## AutoMdxBuilder
-**自动化制作 mdx 词典工具，人人都可以制作电子词典**
+**自动化制作 mdx 词典工具，人人都可以制作电子词典**（支持 Windows/macOS/Linux）
 
 AutoMdxBuilder 是 [[Mdict]](https://www.mdict.cn/wp/?lang=en) 词典制作相关的工具，旨在自动化词典制作过程，同时降低制作门槛，该工具目前具备以下功能：
 
