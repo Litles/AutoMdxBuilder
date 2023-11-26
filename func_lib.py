@@ -18,7 +18,6 @@ class FuncLib():
     """ functions for usage """
     def __init__(self, amb):
         self.settings = amb.settings
-        init(autoreset=True)
 
     def make_entries_img(self, proc_flg_toc, file_out):
         """ (一) 生成图像词条 """

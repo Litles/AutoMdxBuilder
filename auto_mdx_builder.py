@@ -15,7 +15,7 @@ from img_dict_atmpl import ImgDictAtmpl
 from img_dict_btmpl import ImgDictBtmpl
 from text_dict_ctmpl import TextDictCtmpl
 from text_dict_dtmpl import TextDictDtmpl
-import toolkit
+from ebook_utils import EbookUtils
 
 
 class AutoMdxBuilder:
@@ -23,13 +23,14 @@ class AutoMdxBuilder:
     def __init__(self):
         self.settings = Settings()
         self.func = FuncLib(self)
+        self.utils = EbookUtils()
 
     def auto_processing(self, sel):
         """ 根据选择自动处理 """
         if sel == 1:
             # --- 解包 mdx/mdd 文件 ---
             mfile = input("请输入要解包的 mdx/mdd 文件路径: ").strip('"')
-            if toolkit.export_mdx(mfile):
+            if self.utils.export_mdx(mfile):
                 print(Fore.GREEN + "\n已输出在同目录下: " + Fore.RESET + os.path.splitext(mfile)[0])
         elif sel == 2:
             # --- 将源 txt 文件打包成 mdx 文件 ---
@@ -55,7 +56,7 @@ class AutoMdxBuilder:
                 file_dict_info = self.func.generate_info_html(os.path.splitext(fname_txt)[0], file_info_raw, None)
                 # 打包
                 print('\n------------------\n开始打包……\n')
-                done_flg = toolkit.pack_to_mdict(file_final_txt, file_dict_info, dir_data, dir_curr)
+                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, dir_curr)
                 if done_flg:
                     print(Fore.GREEN + "\n打包完毕。")
             else:
@@ -66,7 +67,7 @@ class AutoMdxBuilder:
             dir_data = dir_data.rstrip('\\')
             dir_data = dir_data.rstrip('/')
             print('\n------------------\n开始打包……\n')
-            done_flg = toolkit.pack_to_mdd(dir_data, None)
+            done_flg = self.utils.pack_to_mdd(dir_data, None)
             if done_flg:
                 print(Fore.GREEN + "\n打包完毕。")
         elif sel == 10:
@@ -153,7 +154,7 @@ class AutoMdxBuilder:
             if os.path.isfile(p) and p.lower().endswith('.pdf'):
                 fname = os.path.split(p)[1]
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
-                toolkit.extract_pdf_to_imgs(p, out_dir)
+                self.utils.extract_pdf_to_imgs(p, out_dir)
             else:
                 print(Fore.RED + "\n输入的路径有误")
         elif sel == 42:
@@ -164,9 +165,9 @@ class AutoMdxBuilder:
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
                 dpi = input("请输入要生成图片的 DPI（回车则默认300）: ")
                 if re.match(r'^\d+$', dpi):
-                    toolkit.convert_pdf_to_imgs(p, out_dir, int(dpi))
+                    self.utils.convert_pdf_to_imgs(p, out_dir, int(dpi))
                 else:
-                    toolkit.convert_pdf_to_imgs(p, out_dir)
+                    self.utils.convert_pdf_to_imgs(p, out_dir)
             else:
                 print(Fore.RED + "\n输入的路径有误")
         elif sel == 43:
@@ -174,7 +175,7 @@ class AutoMdxBuilder:
             p = input("请输入图片所在文件夹路径: ").strip('"\\').rstrip('/')
             if os.path.isdir(p):
                 out_file = p+'.pdf'
-                toolkit.combine_img_to_pdf(p, out_file)
+                self.utils.combine_img_to_pdf(p, out_file)
             else:
                 print(Fore.RED + "\n输入的路径有误")
         elif sel == 44:
@@ -182,11 +183,11 @@ class AutoMdxBuilder:
             file_pdf = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
             dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"\\').rstrip('/')
             if os.path.isdir(dir_bkmk):
-                toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk, False)
+                self.utils.eximport_bkmk_fp2p(file_pdf, dir_bkmk, False)
             elif dir_bkmk is None or len(dir_bkmk) == 0:
                 fname = os.path.split(file_pdf)[1]
                 dir_bkmk = os.path.join(os.path.split(file_pdf)[0], fname.split('.')[0]+'_bkmk')
-                toolkit.eximport_bkmk_fp2p(file_pdf, dir_bkmk)
+                self.utils.eximport_bkmk_fp2p(file_pdf, dir_bkmk)
             else:
                 print(Fore.RED + "\n输入的路径有误")
         else:
@@ -208,7 +209,7 @@ class AutoMdxBuilder:
                 shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
-                done_flg = toolkit.pack_to_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
         elif self.settings.templ_choice in ('b', 'B'):
             """ 制作图像词典 (模板B) """
             # 生成 txt 源文本
@@ -223,7 +224,7 @@ class AutoMdxBuilder:
                 shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
-                done_flg = toolkit.pack_to_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
         elif self.settings.templ_choice in ('c', 'C'):
             """ 制作文本词典 (模板C) """
             # 生成 txt 源文本
@@ -241,7 +242,7 @@ class AutoMdxBuilder:
                 dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
                 if not os.path.exists(dir_data) or len(os.listdir(dir_data)) == 0:
                     dir_data = None
-                done_flg = toolkit.pack_to_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
         elif self.settings.templ_choice in ('d', 'D'):
             """ 制作文本词典 (模板D) """
             # 生成 txt 源文本
@@ -259,7 +260,7 @@ class AutoMdxBuilder:
                 dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
                 if not os.path.exists(dir_data) or len(os.listdir(dir_data)) == 0:
                     dir_data = None
-                done_flg = toolkit.pack_to_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
         else:
             pass
         if done_flg:
@@ -281,7 +282,7 @@ class AutoMdxBuilder:
         if os.path.exists(tmp_xdir):
             shutil.rmtree(tmp_xdir)
         shutil.copy(xfile, tmp_xfile)
-        if toolkit.export_mdx(tmp_xfile):
+        if self.utils.export_mdx(tmp_xfile):
             tmp_final_txt = os.path.join(tmp_xdir, fname.split('.')[0]+'.txt')
         # 分析 info 信息, 确定是否支持还原
         for f in os.listdir(tmp_xdir):
@@ -328,12 +329,12 @@ class AutoMdxBuilder:
                 dir_data = os.path.join(out_dir, "imgs")
                 if os.path.exists(dir_data):
                     shutil.rmtree(dir_data)
-                toolkit.mdict(['-x', file_mdd, '-d', dir_data])
+                self.utils.mdict(['-x', file_mdd, '-d', dir_data])
             elif os.path.isfile(file_mdd) and templ_choice in ('C', 'D'):
                 dir_data = os.path.join(out_dir, "data")
                 if os.path.exists(dir_data):
                     shutil.rmtree(dir_data)
-                toolkit.mdict(['-x', file_mdd, '-d', dir_data])
+                self.utils.mdict(['-x', file_mdd, '-d', dir_data])
             else:
                 print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
             print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
@@ -355,7 +356,7 @@ class AutoMdxBuilder:
                 os.makedirs(out_dir)
             # 1.导出书签
             cur_path = os.getcwd()
-            toolkit.eximport_bkmk_fp2p(input_path, os.path.join(cur_path, dir_bkmk))
+            self.utils.eximport_bkmk_fp2p(input_path, os.path.join(cur_path, dir_bkmk))
             try:
                 with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16le') as fr:
                     text = fr.read()
@@ -391,7 +392,7 @@ class AutoMdxBuilder:
             # 3.导出图片
             if not os.path.exists(os.path.join(out_dir, 'imgs')):
                 os.makedirs(os.path.join(out_dir, 'imgs'))
-            toolkit.pdf_to_imgs(input_path, os.path.join(out_dir, 'imgs'))
+            self.utils.pdf_to_imgs(input_path, os.path.join(out_dir, 'imgs'))
         else:
             out_dir = input_path+'_amb'
             if not os.path.exists(out_dir):
@@ -400,7 +401,7 @@ class AutoMdxBuilder:
             if not os.path.exists(os.path.join(out_dir, 'imgs')):
                 os.makedirs(os.path.join(out_dir, 'imgs'))
             print(os.path.join(out_dir, 'imgs'))
-            toolkit.convert_pdg_to_img(input_path, os.path.join(out_dir, 'imgs'))
+            self.utils.convert_pdg_to_img(input_path, os.path.join(out_dir, 'imgs'))
             # 2.识别词典信息
             bkmk_itf = os.path.join(os.path.join(out_dir, 'imgs'), 'FreePic2Pdf.itf')
             if os.path.isfile(bkmk_itf):
@@ -482,10 +483,10 @@ class AutoMdxBuilder:
             print(Fore.YELLOW + "WARN: " + Fore.RESET + "未找到 toc.txt/index_all.txt, 生成的 PDF 将不带书签")
         # 2.将图片合成PDF
         if os.path.isdir(os.path.join(dir_amb, 'imgs')):
-            toolkit.combine_img_to_pdf_fp2p(os.path.join(dir_amb, 'imgs'), out_file)
+            self.utils.combine_img_to_pdf_fp2p(os.path.join(dir_amb, 'imgs'), out_file)
             # 3.给PDF挂书签
             cur_path = os.getcwd()
-            toolkit.eximport_bkmk_fp2p(out_file, os.path.join(cur_path, dir_bkmk), False)
+            self.utils.eximport_bkmk_fp2p(out_file, os.path.join(cur_path, dir_bkmk), False)
             shutil.rmtree(dir_bkmk)
             print(Fore.GREEN + "\n\nPDF生成完毕！")
         else:

@@ -17,7 +17,6 @@ class TextDictCtmpl:
     def __init__(self, amb):
         self.settings = amb.settings
         self.func = FuncLib(amb)
-        init(autoreset=True)
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """

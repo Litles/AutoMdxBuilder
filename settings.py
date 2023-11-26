@@ -6,6 +6,7 @@
 # @Version : 1.5
 
 import os
+import sys
 from tomli import load
 from tomlkit import loads
 from colorama import init, Fore
@@ -28,8 +29,11 @@ class Settings:
         self.fname_dict_info = 'info.html'
 
         # 输出文件
-        cur_path = os.getcwd()
-        self.dir_output_tmp = os.path.join(cur_path, '_tmp')
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            self.dir_bundle = sys._MEIPASS
+        else:
+            self.dir_bundle = os.getcwd()
+        self.dir_output_tmp = os.path.join(self.dir_bundle, '_tmp')
         if not os.path.exists(self.dir_output_tmp):
             os.makedirs(self.dir_output_tmp)
         self.fname_entries_text = 'entries_text.txt'
@@ -45,7 +49,7 @@ class Settings:
         self.fname_toc_all = 'toc_all.txt'
 
         # 预设样式/模板
-        self.dir_lib = os.path.join(cur_path, 'lib')
+        self.dir_lib = os.path.join(self.dir_bundle, 'lib')
         self.build_tmpl = 'build.toml'
         self.css_atmpl = 'atmpl.css'
         self.css_btmpl = 'btmpl.css'
@@ -53,7 +57,6 @@ class Settings:
         self.css_dtmpl = 'dtmpl.css'
 
     def load_build_toml(self, file_toml, pdf_flg=False, outside_flg=True):
-        init(autoreset=True)
         build_flg = False
         # 输入文件夹
         self.dir_input = os.path.split(file_toml)[0]
