@@ -10,7 +10,7 @@ import re
 import shutil
 from datetime import datetime
 # import chardet
-from colorama import init, Fore
+from colorama import Fore
 import opencc
 
 
@@ -266,7 +266,7 @@ class FuncLib():
                         fw.write(f'{index[x]["name"]}\t{str(index[x]["page"])}\n')
                     else:
                         break
-            print(Fore.GREEN + "\n处理完成, 生成在同 index.txt 目录下")
+            print(Fore.GREEN + "\n处理完成, 生成在同 index.txt 目录下" + Fore.RESET)
             # 需要检查
             if len(toc_sub) > 0:
                 fp = os.path.join(os.path.split(file_index_all)[0], '_need_checking.log')
@@ -275,7 +275,7 @@ class FuncLib():
                         fw.write(t)
                 print(Fore.YELLOW + "INFO: " + Fore.RESET + "存在不确定的排序, 已存放在日志 _need_checking.log 中，请手动对照调整")
         else:
-            print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
+            print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序" + Fore.RESET)
 
     def text_file_check(self, text_file):
         check_result = 0

@@ -8,20 +8,18 @@
 import os
 import re
 import shutil
-from colorama import init, Fore
-# import codecs
+from colorama import Fore
 # from PIL import Image
 import sys
 from mdict_utils.__main__ import run as mdict_cmd
 import fitz
 from fitz.__main__ import main as fitz_command
-from settings import Settings
 
 
 class EbookUtils:
     """ 电子书(PDF等)实用工具 """
-    def __init__(self):
-        self.settings = Settings()
+    def __init__(self, amb):
+        self.settings = amb.settings
 
     # ========== (〇) mdict-utils ==========
     def mdict(self, parms):
@@ -286,36 +284,6 @@ class EbookUtils:
         doc.close()
         print('转换完成！')
 
-    # def extract_pdf_to_imgs(self, file_pdf, dir_out):
-    #     """ Extracting images with mutool.exe (Windows only) """
-    #     # 1.extract to tmp folder
-    #     file_exe = os.path.join(os.path.join(os.path.join(self.settings.dir_bundle, 'tools'), 'MuPDF'), 'mutool.exe')
-    #     dir_tmp = os.path.join(self.settings.dir_bundle, '_tmp')
-    #     if not os.path.exists(dir_tmp):
-    #         os.makedirs(dir_tmp)
-    #     dir_tmp_me = os.path.join(dir_tmp, 'MuPDF_extract')
-    #     if not os.path.exists(dir_tmp_me):
-    #         os.makedirs(dir_tmp_me)
-    #     os.chdir(dir_tmp_me)
-    #     os.system(f'{file_exe} extract "{file_pdf}"')
-    #     os.chdir(self.settings.dir_bundle)
-    #     # 2.remove to destination
-    #     img_exts = ['jpg', 'jpeg', 'jp2', 'png', 'gif', 'bmp', 'tif', 'tiff']
-    #     imgs = []
-    #     for fname in os.listdir(dir_tmp_me):
-    #         ext = fname.split('.')[1].lower()
-    #         if ext in img_exts:
-    #             imgs.append({"path": os.path.join(dir_tmp_me, fname), "ext": '.'+ext})
-    #     if not os.path.exists(dir_out):
-    #         os.makedirs(dir_out)
-    #     imgs.sort(key=lambda x: x["path"], reverse=False)
-    #     n = 0
-    #     for img in imgs:
-    #         n += 1
-    #         os.rename(img["path"], os.path.join(dir_out, str(n).zfill(6)+img["ext"]))
-    #     shutil.rmtree(dir_tmp_me)
-    #     print('提取完成！')
-
     def extract_pdf_to_imgs_fitz(self, file_pdf, dir_out):
         """ 使用 fitz(mupdf), 如果生成了JBIG2加密的 jb2，则还需要使用 jbig2dec 解密成 png """
         # 准备参数
@@ -329,86 +297,3 @@ class EbookUtils:
         fitz_command()
         sys.argv[1:] = saved_parms
         print('提取完成！')
-
-    # ========== (二) From Images to PDF ==========
-    # def combine_img_to_pdf(self, dir_imgs, file_pdf):
-    #     """ use mutool.exe to combine images to pdf file (Windows only) """
-    #     # prepare paths
-    #     file_exe = os.path.join(os.path.join(os.path.join(self.settings.dir_bundle, 'tools'), 'MuPDF'), 'mutool.exe')
-    #     dir_tmp = os.path.join(self.settings.dir_bundle, '_tmp')
-    #     if not os.path.exists(dir_tmp):
-    #         os.makedirs(dir_tmp)
-    #     dir_pcs = os.path.join(dir_tmp, 'MuPDF_pcs')
-    #     dir_pdf_frag = os.path.join(dir_tmp, 'MuPDF_pdf_frag')
-    #     dir_pdf_merge = os.path.join(dir_tmp, 'MuPDF_pdf_merge')
-    #     if not os.path.exists(dir_pcs):
-    #         os.makedirs(dir_pcs)
-    #     if not os.path.exists(dir_pdf_frag):
-    #         os.makedirs(dir_pdf_frag)
-    #     if not os.path.exists(dir_pdf_merge):
-    #         os.makedirs(dir_pdf_merge)
-    #     file_pcs = os.path.join(os.path.join(self.settings.dir_bundle, 'lib'), 'MuPDF_pcs.txt')
-    #     # read image files to get sizes
-    #     img_exts = ['.jpg', 'jpeg', '.jp2', '.png', '.gif', '.bmp', '.tif', '.tiff']
-    #     imgs = []
-    #     for fname in os.listdir(dir_imgs):
-    #         fp = os.path.join(dir_imgs, fname)
-    #         if os.path.splitext(fp)[1].lower() in img_exts:
-    #             img = {
-    #                 "fname": fname,
-    #                 "path": fp,
-    #                 "size": Image.open(fp).size
-    #             }
-    #             imgs.append(img)
-    #     imgs.sort(key=lambda x: x["fname"], reverse=False)
-    #     # generate pcs(Page content streams) txt file
-    #     with open(file_pcs, 'r', encoding='utf-8') as fr:
-    #         text = fr.read()
-    #     page_num = 0
-    #     txts = []
-    #     for img in imgs:
-    #         page_num += 1
-    #         pcs = text.replace('<num>', str(page_num).zfill(6))
-    #         pcs = pcs.replace('<path>', img["path"])
-    #         pcs = pcs.replace('<width>', str(img["size"][0]))
-    #         pcs = pcs.replace('<height>', str(img["size"][1]))
-    #         txt = os.path.join(dir_pcs, str(page_num).zfill(6)+'.txt')
-    #         with open(txt, 'w', encoding='utf-8') as fw:
-    #             fw.write(pcs)
-    #         txts.append(txt)
-    #     # start to create pdf fragments
-    #     pdfs = []
-    #     n, k, step = 1, 1, 20
-    #     total_step = int(page_num/step + 1)
-    #     while k <= total_step:
-    #         pcs_str = ''
-    #         bound = k*step
-    #         while n <= min(bound, page_num):
-    #             pcs_str = pcs_str + ' ' + txts[n-1]
-    #             n += 1
-    #         tmp_pdf = os.path.join(dir_pdf_frag, str(k).zfill(3)+'.pdf')
-    #         os.system(f'{file_exe} create -o {tmp_pdf} -O compress-images {pcs_str}')
-    #         print(f'[{str(min(n,page_num))}/{str(page_num)}]PDF合成中')
-    #         pdfs.append(tmp_pdf)
-    #         k += 1
-    #     # merge fragments
-    #     pdf_str = ''
-    #     file_num = len(pdfs)
-    #     n, k, step = 1, 1, 10
-    #     total_step = int(file_num/step + 1)
-    #     while k <= total_step:
-    #         merge_str = ''
-    #         bound = k*step
-    #         while n <= min(bound, file_num):
-    #             merge_str = merge_str + ' ' + pdfs[n-1]
-    #             n += 1
-    #         tmp_pdf = os.path.join(dir_pdf_merge, str(k).zfill(2)+'.pdf')
-    #         os.system(f'{file_exe} merge -o {tmp_pdf} {merge_str}')
-    #         pdf_str = pdf_str + ' ' + tmp_pdf
-    #         k += 1
-    #     # output final single file
-    #     os.system(f'{file_exe} merge -o {file_pdf} {pdf_str}')
-    #     shutil.rmtree(dir_pcs)
-    #     shutil.rmtree(dir_pdf_frag)
-    #     shutil.rmtree(dir_pdf_merge)
-    #     print('合成完成！')

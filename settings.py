@@ -9,7 +9,7 @@ import os
 import sys
 from tomli import load
 from tomlkit import loads
-from colorama import init, Fore
+from colorama import Fore
 
 
 class Settings:
@@ -44,6 +44,7 @@ class Settings:
         self.fname_redirects_syn = 'redirects_syn.txt'
         self.fname_redirects_st = 'redirects_st.txt'
         self.fname_redirects_headword = 'redirects_headword.txt'
+        self.file_log = os.path.join(self.dir_bundle, '_log.log')
 
         # 其他文件
         self.fname_toc_all = 'toc_all.txt'

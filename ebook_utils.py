@@ -9,7 +9,7 @@ import os
 import re
 import shutil
 import time
-from colorama import init, Fore
+from colorama import Fore
 # import codecs
 from pywinauto.application import Application
 from pywinauto.keyboard import send_keys
@@ -19,13 +19,12 @@ import sys
 from mdict_utils.__main__ import run as mdict_cmd
 # import fitz
 # from fitz.__main__ import main as fitz_command
-from settings import Settings
 
 
 class EbookUtils:
     """ 电子书(PDF等)实用工具 """
-    def __init__(self):
-        self.settings = Settings()
+    def __init__(self, amb):
+        self.settings = amb.settings
 
     # ========== (〇) mdict-utils ==========
     def mdict(self, parms):
@@ -334,8 +333,8 @@ class EbookUtils:
     def extract_pdf_to_imgs_pdfpatcher(self, file_pdf, dir_out):
         """ Extracting images with PDFPatcher.exe (Windows only) """
         # 0.配置程序选项
-        dir_program = './tools/PDFPatcher/'
-        file_conf_bak = './lib/PDFPatcher_AppConfig.json'
+        dir_program = os.path.join(os.path.join(self.settings.dir_bundle, 'tools'), 'PDFPatcher')
+        file_conf_bak = os.path.join(self.settings.dir_lib, 'PDFPatcher_AppConfig.json')
         file_conf = os.path.join(dir_program, 'AppConfig.json')
         shutil.copy(file_conf_bak, file_conf)
         # 1.启动 PDFPatcher 程序, 配置提取选项
@@ -391,7 +390,7 @@ class EbookUtils:
             os.makedirs(dir_pdf_frag)
         if not os.path.exists(dir_pdf_merge):
             os.makedirs(dir_pdf_merge)
-        file_pcs = os.path.join(os.path.join(self.settings.dir_bundle, 'lib'), 'MuPDF_pcs.txt')
+        file_pcs = os.path.join(self.settings.dir_lib, 'MuPDF_pcs.txt')
         # read image files to get sizes
         img_exts = ['.jpg', 'jpeg', '.jp2', '.png', '.gif', '.bmp', '.tif', '.tiff']
         imgs = []
@@ -460,8 +459,8 @@ class EbookUtils:
     def combine_img_to_pdf_fp2p(self, dir_imgs, file_pdf):
         """ 使用 FreePic2Pdf.exe 图像合成 pdf """
         # 0.配置转换选项, 设定图像文件夹
-        dir_program = './tools/FreePic2Pdf/'
-        file_ini_bak = './lib/FreePic2Pdf.ini'
+        dir_program = os.path.join(os.path.join(self.settings.dir_bundle, 'tools'), 'FreePic2Pdf')
+        file_ini_bak = os.path.join(self.settings.dir_lib, 'FreePic2Pdf.ini')
         file_ini = os.path.join(dir_program, 'FreePic2Pdf.ini')
         with open(file_ini_bak, 'r', encoding='utf-16le') as fr:
             para_item = 'PARA_DIR_SRC='+dir_imgs.replace('\\', '\\\\')
@@ -491,8 +490,8 @@ class EbookUtils:
     def convert_pdg_to_img(self, dir_pdg, dir_out):
         """ 使用 Pdg2Pic.exe 转换 pdgs 为 imgs """
         # 0.配置转换选项, 设定输出文件夹
-        dir_program = './tools/Pdg2Pic/'
-        file_ini_bak = './lib/Pdg2Pic.ini'
+        dir_program = os.path.join(os.path.join(self.settings.dir_bundle, 'tools'), 'Pdg2Pic')
+        file_ini_bak = os.path.join(self.settings.dir_lib, 'Pdg2Pic.ini')
         file_ini = os.path.join(dir_program, 'Pdg2Pic.ini')
         with open(file_ini_bak, 'r', encoding='utf-16le') as fr:
             para_item = 'PARA_DIR_TGT='+dir_out.replace('\\', '\\\\')
@@ -537,7 +536,7 @@ class EbookUtils:
     # ========== (四) PDF Bookmark Management ==========
     def eximport_bkmk_fp2p(self, file_pdf, dir_bkmk, export_flg=True):
         """ 使用 FreePic2Pdf.exe 向/从 pdf 文件中导入/导出书签 """
-        dir_program = './tools/FreePic2Pdf/'
+        dir_program = os.path.join(os.path.join(self.settings.dir_bundle, 'tools'), 'FreePic2Pdf')
         # 1.启动 FreePic2Pdf 程序
         Timings.fast()
         app = Application(backend='win32').start(os.path.join(dir_program, 'FreePic2Pdf.exe'))
@@ -607,7 +606,7 @@ class EbookUtils:
             #         bkmk_itf = re.sub(r'^TextPage=$', 'TextPage='+base_page.group(0), bkmk_itf, flags=re.M)
             # with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r', encoding='utf-16') as fr:
             #     bkmk_text = fr.read()
-            # dir_bkmk_bk = os.path.join('lib', 'bkmk')
+            # dir_bkmk_bk = os.path.join(self.settings.dir_lib, 'bkmk')
             # shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf"), os.path.join(dir_bkmk, "FreePic2Pdf.itf"))
             # shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt"), os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt"))
             # with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'w', encoding='utf-8') as fw:

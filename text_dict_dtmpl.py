@@ -8,7 +8,7 @@
 import os
 import re
 from tomlkit import dumps
-from colorama import init, Fore
+from colorama import Fore
 from func_lib import FuncLib
 
 
@@ -59,7 +59,7 @@ class TextDictDtmpl:
             file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, 'D')
             return self.proc_flg, file_final_txt, file_dict_info
         else:
-            print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
+            print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return self.proc_flg, None, None
 
     def extract_final_txt(self, file_final_txt, out_dir, dict_name):

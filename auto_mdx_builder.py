@@ -5,10 +5,12 @@
 # @Link    : https://github.com/Litles
 # @Version : 1.5
 
+import logging
+import traceback
 import os
 import re
 import shutil
-from colorama import init, Fore
+from colorama import Fore, just_fix_windows_console
 from settings import Settings
 from func_lib import FuncLib
 from img_dict_atmpl import ImgDictAtmpl
@@ -23,7 +25,7 @@ class AutoMdxBuilder:
     def __init__(self):
         self.settings = Settings()
         self.func = FuncLib(self)
-        self.utils = EbookUtils()
+        self.utils = EbookUtils(self)
 
     def auto_processing(self, sel):
         """ 根据选择自动处理 """
@@ -58,9 +60,9 @@ class AutoMdxBuilder:
                 print('\n------------------\n开始打包……\n')
                 done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, dir_curr)
                 if done_flg:
-                    print(Fore.GREEN + "\n打包完毕。")
+                    print(Fore.GREEN + "\n打包完毕。" + Fore.RESET)
             else:
-                print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序")
+                print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
         elif sel == 3:
             # --- 将资料包文件夹打包成 mdd 文件 ---
             dir_data = input("请输入要打包的资料文件夹路径: ").strip('"\\').rstrip('/')
@@ -69,7 +71,7 @@ class AutoMdxBuilder:
             print('\n------------------\n开始打包……\n')
             done_flg = self.utils.pack_to_mdd(dir_data, None)
             if done_flg:
-                print(Fore.GREEN + "\n打包完毕。")
+                print(Fore.GREEN + "\n打包完毕。" + Fore.RESET)
         elif sel == 10:
             # --- 从 PDF文件/pdg文件夹 生成预备原材料 ---
             p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"\\').rstrip('/')
@@ -84,9 +86,9 @@ class AutoMdxBuilder:
             file_toc_all = input("请输入 toc_all.txt 的文件路径: ").strip('"')
             file_index_all = os.path.join(os.path.split(file_toc_all)[0], 'index_all.txt')
             if self.func.toc_all_to_index(file_toc_all, file_index_all):
-                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
+                print(Fore.GREEN + "\n处理完成, 生成在同目录下" + Fore.RESET)
             else:
-                print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序")
+                print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序" + Fore.RESET)
         elif sel == 12:
             # --- 合并 toc.txt 和 index.txt 为 index_all.txt ---
             file_toc = input("(1) 请输入 toc.txt 的文件路径: ").strip('"')
@@ -145,9 +147,9 @@ class AutoMdxBuilder:
             file_index_all = input("请输入 index_all.txt 的文件路径: ").strip('"')
             file_toc_all = os.path.join(os.path.split(file_index_all)[0], 'toc_all.txt')
             if self.func.index_to_toc(file_index_all, file_toc_all):
-                print(Fore.GREEN + "\n处理完成, 生成在同目录下")
+                print(Fore.GREEN + "\n处理完成, 生成在同目录下" + Fore.RESET)
             else:
-                print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码")
+                print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码" + Fore.RESET)
         elif sel == 41:
             # --- 从 PDF 提取图片 (MuPDF) ---
             p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
@@ -156,7 +158,7 @@ class AutoMdxBuilder:
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
                 self.utils.extract_pdf_to_imgs(p, out_dir)
             else:
-                print(Fore.RED + "\n输入的路径有误")
+                print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 42:
             # --- 将 PDF 转换成图片 (MuPDF) ---
             p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
@@ -169,7 +171,7 @@ class AutoMdxBuilder:
                 else:
                     self.utils.convert_pdf_to_imgs(p, out_dir)
             else:
-                print(Fore.RED + "\n输入的路径有误")
+                print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 43:
             # --- 将 图片 合成 PDF (MuPDF) ---
             p = input("请输入图片所在文件夹路径: ").strip('"\\').rstrip('/')
@@ -177,7 +179,7 @@ class AutoMdxBuilder:
                 out_file = p+'.pdf'
                 self.utils.combine_img_to_pdf(p, out_file)
             else:
-                print(Fore.RED + "\n输入的路径有误")
+                print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 44:
             # --- PDF 书签导出/导入（FreePic2Pdf） ---
             file_pdf = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
@@ -189,7 +191,7 @@ class AutoMdxBuilder:
                 dir_bkmk = os.path.join(os.path.split(file_pdf)[0], fname.split('.')[0]+'_bkmk')
                 self.utils.eximport_bkmk_fp2p(file_pdf, dir_bkmk)
             else:
-                print(Fore.RED + "\n输入的路径有误")
+                print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         else:
             pass
 
@@ -264,7 +266,7 @@ class AutoMdxBuilder:
         else:
             pass
         if done_flg:
-            print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！")
+            print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！" + Fore.RESET)
 
     def _restore_raw(self, xfile, outside_flg):
         """ 将词典还原为原材料 """
@@ -433,7 +435,7 @@ class AutoMdxBuilder:
                 fr.truncate()
                 fr.write(text)
         shutil.rmtree(dir_bkmk)
-        print(Fore.GREEN + "\n\n预备原材料生成完毕！")
+        print(Fore.GREEN + "\n\n预备原材料生成完毕！" + Fore.RESET)
 
     def amb_to_pdf(self, file_toml, outside_flg):
         """ 从 amb 文件夹合成 PDF 文件 """
@@ -488,7 +490,7 @@ class AutoMdxBuilder:
             cur_path = os.getcwd()
             self.utils.eximport_bkmk_fp2p(out_file, os.path.join(cur_path, dir_bkmk), False)
             shutil.rmtree(dir_bkmk)
-            print(Fore.GREEN + "\n\nPDF生成完毕！")
+            print(Fore.GREEN + "\n\nPDF生成完毕！" + Fore.RESET)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "未找到 imgs 文件夹")
 
@@ -501,13 +503,13 @@ def print_menu():
     print(Fore.CYAN + "  2" + Fore.RESET + ".将源 txt 文件打包成 mdx 文件")
     print(Fore.CYAN + "  3" + Fore.RESET + ".将资料包文件夹打包成 mdd 文件")
     print("\n(一) 准备原材料")
-    print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)")
+    print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)" + Fore.RESET)
     print(Fore.CYAN + "  11" + Fore.RESET + ".从 toc_all.txt 生成 index_all.txt")
     print(Fore.CYAN + "  12" + Fore.RESET + ".合并 toc.txt 和 index.txt 为 index_all.txt")
     print("\n(二) 制作词典")
-    print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典" + Fore.YELLOW + " (需准备好原材料)")
+    print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典" + Fore.YELLOW + " (需准备好原材料)" + Fore.RESET)
     print("\n(三) 还原词典")
-    print(Fore.CYAN + "  30" + Fore.RESET + ".从词典还原原材料" + Fore.YELLOW + " (仅支持 AMB 1.4 以上版本)")
+    print(Fore.CYAN + "  30" + Fore.RESET + ".从词典还原原材料" + Fore.YELLOW + " (仅支持 AMB 1.4 以上版本)" + Fore.RESET)
     print(Fore.CYAN + "  31" + Fore.RESET + ".从原材料还原 PDF")
     print(Fore.CYAN + "  32" + Fore.RESET + ".从 index_all.txt 还原 toc_all.txt")
     print("\n(四) 其他工具")
@@ -515,26 +517,33 @@ def print_menu():
     print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片 (MuPDF)")
     print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成 PDF (MuPDF)")
     print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
-    # print(Fore.CYAN + "  0" + Fore.RESET + ".退出程序")
 
 
-if __name__ == '__main__':
-    init(autoreset=True)
+def main():
+    just_fix_windows_console()
     # 程序开始
-    amb = AutoMdxBuilder()
-    print(Fore.CYAN + "欢迎使用 AutoMdxBuilder, 下面是功能选单:" + Fore.RESET)
+    print(Fore.CYAN + "欢迎使用 AutoMdxBuilder 1.5, 下面是功能选单:" + Fore.RESET)
     while True:
         print_menu()
-        try:
-            sel = int(input('\n请输入数字（回车或“0”退出程序）: '))
-        except ValueError:
-            sel = 0
+        sel = input('\n请输入数字（回车或“0”退出程序）: ')
         # 执行选择
-        if sel in range(1, 50):
+        if re.match(r'^\d+$', sel) and int(sel) in range(1, 50):
             print('\n------------------')
-            amb.auto_processing(sel)
+            amb = AutoMdxBuilder()
+            amb.auto_processing(int(sel))
             print('\n\n------------------------------------')
-            if input(Fore.CYAN + "回车退出程序, 或输入 Y/y 继续使用 AMB: " + Fore.RESET) not in ['Y', 'y']:
+            # 判断是否继续
+            ctn = input(Fore.CYAN + "回车退出程序, 或输入 Y/y 继续使用 AMB: " + Fore.RESET)
+            if ctn not in ['Y', 'y']:
                 break
         else:
             break
+
+
+if __name__ == '__main__':
+    logging.basicConfig(format='%(asctime)s | %(message)s', filename=Settings().file_log, filemode='w', level=logging.INFO)
+    try:
+        main()
+        logging.info('The program worked fine.')
+    except:
+        logging.error(traceback.format_exc())
