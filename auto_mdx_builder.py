@@ -515,14 +515,14 @@ def print_menu():
     print("\n(四) 其他工具")
     print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片 (MuPDF)")
     print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片 (MuPDF)")
-    print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成 PDF (MuPDF)")
+    print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成PDF (MuPDF)")
     print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
 
 
 def main():
     just_fix_windows_console()
     # 程序开始
-    print(Fore.CYAN + "欢迎使用 AutoMdxBuilder 1.5, 下面是功能选单:" + Fore.RESET)
+    print(Fore.CYAN + f"欢迎使用 AutoMdxBuilder {tmp_set.version}, 下面是功能选单:" + Fore.RESET)
     while True:
         print_menu()
         sel = input('\n请输入数字（回车或“0”退出程序）: ')
@@ -541,7 +541,8 @@ def main():
 
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)s | %(message)s', filename=Settings().file_log, filemode='w', level=logging.INFO)
+    tmp_set = Settings()
+    logging.basicConfig(format='%(asctime)s | %(message)s', filename=tmp_set.file_log, filemode='w', level=logging.INFO)
     try:
         main()
         logging.info('The program worked fine.')

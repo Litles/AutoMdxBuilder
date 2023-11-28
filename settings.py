@@ -66,7 +66,7 @@ class Settings:
                 build = load(fr)
                 # 通用设置
                 self.name = build["global"]["name"]  # 书名
-                self.name_abbr = build["global"]["name_abbr"]  # 书名首字母缩写
+                self.name_abbr = build["global"]["name_abbr"].upper()  # 书名首字母缩写
                 self.simp_trad_flg = build["global"]["simp_trad_flg"]  # 是否要繁简通搜
                 # 区别设置
                 self.templ_choice = build["global"]["templ_choice"].upper()  # 模板选择
