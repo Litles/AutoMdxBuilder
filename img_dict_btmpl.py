@@ -9,68 +9,55 @@ import os
 import re
 from tomlkit import dumps
 from colorama import Fore
-from func_lib import FuncLib
 
 
 class ImgDictBtmpl:
     """ 图像词典（模板B） """
     def __init__(self, amb):
         self.settings = amb.settings
-        self.func = FuncLib(amb)
+        self.func = amb.func
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
-        # 初始化, 检查原材料
-        self.proc_flg, self.proc_flg_syns, self.index_all_flg = self._check_raw_files()
+        # 检查原材料
+        check_result = self._check_raw_files()
         # 开始制作
-        if self.proc_flg:
+        if check_result:
             print('\n材料检查通过, 开始制作词典……\n')
             # 清空临时目录下所有文件
             for fname in os.listdir(self.settings.dir_output_tmp):
                 fpath = os.path.join(self.settings.dir_output_tmp, fname)
                 if os.path.isfile(fpath):
                     os.remove(fpath)
-            step = 0
-            # (一) 生成图像词条
-            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_img)
-            dir_imgs_out, imgs, p_total, n_len = self.func.make_entries_img(False, file_1)
-            step += 1
-            print(f'\n{step}.文件 "{self.settings.fname_entries_img}" 已生成；')
-            # (二) 生成主体词条, 带层级导航
-            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_with_navi)
-            if self.index_all_flg:
-                file_index_all = os.path.join(self.settings.dir_input, self.settings.fname_index_all)
-            else:
-                file_toc_all = os.path.join(self.settings.dir_input, self.settings.fname_toc_all)  # index_all 的替代
-                file_index_all = os.path.join(self.settings.dir_output_tmp, self.settings.fname_index_all)
-                self.func.toc_all_to_index(file_toc_all, file_index_all)
-            words_part1 = self._make_entries_with_navi(imgs, file_index_all, file_2)
-            step += 1
-            print(f'{step}.文件 "{self.settings.fname_entries_with_navi}" 已生成；')
-            # (三) 生成近义词重定向
-            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)
-            words_part2 = []
-            if self.proc_flg_syns:
-                words_part2 = self.func.make_redirects_syn(file_3)
-                step += 1
-                print(f'{step}.文件 "{self.settings.fname_redirects_syn}" 已生成；')
-            # (四) 生成繁简通搜重定向
-            file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_st)
-            if self.settings.simp_trad_flg:
-                self.func.make_redirects_st(words_part1+words_part2, file_4)
-                step += 1
-                print(f'{step}.文件 "{self.settings.fname_redirects_st}" 已生成；')
-            # 合并成最终 txt 源文本
+            # 预定义输出文件名
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
+            file_dict_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
+            dir_imgs_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.dname_imgs)
+            # 1.分步生成各部分源文本
+            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_img)  # 图像词条
+            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_with_navi)  # 带导航图像词条
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)  # 同义词重定向
+            file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_st)  # 繁简重定向
+            # (1) 生成图像词条
+            imgs, n_len = self.func.make_entries_img(check_result[1], dir_imgs_tmp, file_1, None)
+            # (2) 生成主体词条, 带层级导航
+            headwords = self._make_entries_with_navi(imgs, check_result[0], file_2)
+            # (3) 生成同义词重定向
+            if check_result[2]:
+                headwords.append(self.func.make_redirects_syn(check_result[2], file_3))
+            # (4) 生成繁简通搜重定向
+            if self.settings.simp_trad_flg:
+                self.func.make_redirects_st(headwords, file_4)
+            # 2.合并成完整 txt 源文本
             entry_total = self.func.merge_and_count([file_1, file_2, file_3, file_4], file_final_txt)
             print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
-            # 生成 info.html
-            file_info_raw = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-            file_dict_info = self.func.generate_info_html(self.settings.name, file_info_raw, 'B')
-            return self.proc_flg, file_final_txt, dir_imgs_out, file_dict_info
+            # 3.生成 info.html
+            self.func.generate_info_html(check_result[3], file_dict_info, self.settings.name, 'B')
+            # 返回制作结果
+            return [file_final_txt, dir_imgs_tmp, file_dict_info]
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
-            return self.proc_flg, None, None, None
+            return None
 
     def extract_final_txt(self, file_final_txt, out_dir, dict_name):
         """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
@@ -106,7 +93,7 @@ class ImgDictBtmpl:
             if len(names) > 0:
                 name_abbr = names[0]
             else:
-                print(Fore.YELLOW + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
         # 整理 index, 输出 index_all.txt
         dcts.sort(key=lambda dct: dct["id"], reverse=False)
@@ -127,7 +114,7 @@ class ImgDictBtmpl:
 
     def _make_entries_with_navi(self, imgs, file_index_all, file_out):
         """ (二) 生成主体词条, 带层级导航 """
-        words = []
+        headwords = []
         # 1.读取全索引文件
         proc_flg, dcts = self.func.read_index_all(True, file_index_all)
         # 2.生成主体词条
@@ -135,7 +122,7 @@ class ImgDictBtmpl:
             with open(file_out, 'w', encoding='utf-8') as fw:
                 tops = []
                 for dct in dcts:
-                    words.append(dct["title"])
+                    headwords.append(dct["title"])
                     # 词头部分
                     part_title = f'{dct["title"]}\n'
                     part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
@@ -193,7 +180,10 @@ class ImgDictBtmpl:
                 toc_entry += '</ul><div class="bottom-navi">' + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + '</div>\n'
                 toc_entry += '</div>\n</>\n'
                 fw.write(toc_entry)
-        return words
+            print("图像词条(有导航栏)已生成")
+        else:
+            print(Fore.RED + "全索引 index_all.txt 读取失败" + Fore.RESET)
+        return headwords
 
     def _check_raw_files(self):
         """ 检查原材料
@@ -202,19 +192,27 @@ class ImgDictBtmpl:
         * 图像个数与索引范围匹配, 不冲突
         * 检查 info.html 的编码
         """
-        proc_flg = True
-        proc_flg_syns = True
+        check_result = []
+        # 预定义输入文件路径
         dir_imgs = os.path.join(self.settings.dir_input, self.settings.dname_imgs)
-        index_all_flg = True
         file_index_all = os.path.join(self.settings.dir_input, self.settings.fname_index_all)
         file_toc_all = os.path.join(self.settings.dir_input, self.settings.fname_toc_all)  # index_all 的替代
         file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
         file_dict_info = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
         min_index = 0
         max_index = 0
-        # 1.检查索引文件: 必须存在且合格
+        # 初步检查索引文件: 必须存在且合格
         if self.func.text_file_check(file_index_all) == 2:
-            # 读取词条索引
+            index_all_flg = True
+        elif self.func.text_file_check(file_toc_all) == 2:
+            file_index_all = os.path.join(self.settings.dir_output_tmp, self.settings.fname_index_all)
+            index_all_flg = self.func.toc_all_to_index(file_toc_all, file_index_all)
+        else:
+            index_all_flg = False
+        # 若全索引文件初步合格, 则开始进一步检查
+        if index_all_flg:
+            check_result.append(file_index_all)
+            # 1.从 index_all 读取页码信息
             p_last = -100000
             mess_items = []
             with open(file_index_all, 'r', encoding='utf-8') as fr:
@@ -228,47 +226,40 @@ class ImgDictBtmpl:
                         if i < p_last:
                             mess_items.append(f"{mth.group(1)}\t{mth.group(2)}\n")
                         p_last = i
-            proc_flg, dcts = self.func.read_index_all(True, file_index_all)
             if len(mess_items) > 0:
                 with open(os.path.join(self.settings.dir_input, '_need_checking.log'), 'w', encoding='utf-8') as fw:
                     for mi in mess_items:
                         fw.write(mi)
-                print(Fore.YELLOW + "INFO: " + Fore.RESET + "索引中存在乱序的词条, 已输出在日志 _need_checking.log 中, 请检查")
-        elif self.func.text_file_check(file_toc_all) == 2:
-            index_all_flg = False
-            # 读取词条索引
-            with open(file_toc_all, 'r', encoding='utf-8') as fr:
-                lines = fr.readlines()
-                pat = re.compile(r'^(\t*)([^\t]+)\t([\-\d]+)[\r\n]*$')
-                for line in lines:
-                    if pat.match(line):
-                        i = int(pat.match(line).group(3))
-                        max_index = max(max_index, i)
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "索引中存在乱序的词条, 已输出在日志 _need_checking.log 中, 建议检查")
+                # proc_flg, dcts = self.func.read_index_all(True, file_index_all)
+            # 2.检查图像文件夹: 图像数目要与页码数不冲突
+            n = 0
+            if os.path.exists(dir_imgs):
+                for fname in os.listdir(dir_imgs):
+                    if os.path.splitext(fname)[1] in self.settings.img_exts:
+                        n += 1
+            if n == 0:
+                print(Fore.RED + "ERROR: " + Fore.RESET + f"图像文件夹 {dir_imgs} 不存在或为空")
+            elif n < self.settings.body_start:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "图像数量不足(少于起始页码)")
+            elif n < max_index - min_index:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "图像数量不足(少于索引范围)")
+            else:
+                check_result.append(dir_imgs)
+            # 3.检查同义词文件: 若存在就要合格
+            syns_check_num = self.func.text_file_check(file_syns)
+            if syns_check_num == 0:
+                check_result.append(None)
+            elif syns_check_num == 2:
+                check_result.append(file_syns)
+            # 4.检查 info.html: 若存在就要合格
+            info_check_num = self.func.text_file_check(file_dict_info)
+            if info_check_num == 0:
+                check_result.append(None)
+            elif info_check_num == 2:
+                check_result.append(file_dict_info)
+        # 返回最终检查结果
+        if len(check_result) == 4:
+            return check_result
         else:
-            proc_flg = False
-        # 2.检查同义词文件: 若存在就要合格
-        syns_check_result = self.func.text_file_check(file_syns)
-        if syns_check_result == 0:
-            proc_flg_syns = False
-        elif syns_check_result == 1:
-            proc_flg = False
-        else:
-            pass
-        # 3.检查图像
-        n = 0
-        if os.path.exists(dir_imgs):
-            for fname in os.listdir(dir_imgs):
-                n += 1
-        if n == 0:
-            print(Fore.RED + "ERROR: " + Fore.RESET + f"图像文件夹 {dir_imgs} 不存在或为空")
-            proc_flg = False
-        elif n < self.settings.body_start:
-            print(Fore.RED + "ERROR: " + Fore.RESET + f"图像数量不足(少于起始页码)")
-            proc_flg = False
-        elif n < max_index - min_index:
-            print(Fore.RED + "ERROR: " + Fore.RESET + f"图像数量不足(少于索引范围)")
-            proc_flg = False
-        # 4.检查 info.html: 若存在就要合格
-        if self.func.text_file_check(file_dict_info) == 1:
-            proc_flg = False
-        return proc_flg, proc_flg_syns, index_all_flg
+            return None

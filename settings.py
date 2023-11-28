@@ -21,6 +21,7 @@ class Settings:
 
         # 输入文件
         self.dname_imgs = 'imgs'
+        self.img_exts = ['.jpg', 'jpeg', '.jp2', '.png', '.gif', '.bmp', '.tif', '.tiff']
         self.dname_data = 'data'
         self.fname_index = 'index.txt'
         self.fname_index_all = 'index_all.txt'

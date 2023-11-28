@@ -11,23 +11,22 @@ import shutil
 from datetime import datetime
 # import chardet
 from colorama import Fore
-import opencc
+from opencc import OpenCC
 
 
 class FuncLib():
-    """ functions for usage """
+    """ functions for invoking """
     def __init__(self, amb):
         self.settings = amb.settings
 
-    def make_entries_img(self, proc_flg_toc, file_out):
-        """ (一) 生成图像词条 """
-        dir_imgs_out, imgs, n_len = self._prepare_imgs()
-        print('图像处理完毕。')
+    def make_entries_img(self, dir_imgs_in, dir_imgs_out, file_out, navi_items):
+        """ 生成图像词条 """
+        imgs, n_len = self._prepare_imgs(dir_imgs_in, dir_imgs_out)
         # 开始生成词条
         p_total = len(imgs)
         with open(file_out, 'w', encoding='utf-8') as fw:
             part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
-            part_middle = self._generate_navi_middle(proc_flg_toc)
+            part_middle = self._generate_navi_middle(navi_items)
             for i in range(p_total):
                 img = imgs[i]
                 part_title = f'{img["title"]}\n'
@@ -51,7 +50,9 @@ class FuncLib():
                 part_bottom = '<div class="bottom-navi">' + part_left + part_middle + part_right + '</div>\n'
                 # 将完整词条写入文件
                 fw.write(part_title+part_css+part_top+part_img+part_bottom+'</>\n')
-        return dir_imgs_out, imgs, p_total, n_len
+        print("图像词条已生成")
+        # p_total 未返回, 备用
+        return imgs, n_len
 
     def index_to_toc(self, file_index_all, file_toc_all):
         """ 处理成 toc_all.txt 文件 """
@@ -104,8 +105,8 @@ class FuncLib():
         return done_flg
 
     def make_redirects_st(self, words, file_out):
-        converter_s2t = opencc.OpenCC('s2t.json')
-        converter_t2s = opencc.OpenCC('t2s.json')
+        converter_s2t = OpenCC('s2t.json')
+        converter_t2s = OpenCC('t2s.json')
         to_words = []
         # 生成繁简通搜重定向
         with open(file_out, 'w', encoding='utf-8') as fw:
@@ -120,12 +121,12 @@ class FuncLib():
                 if to_word != word and to_word not in to_words:
                     fw.write(f'{to_word}\n@@@LINK={word}\n</>\n')
                     to_words.append(to_word)
+        print("重定向(繁简)词条已生成")
 
-    def make_redirects_syn(self, file_out):
-        """ (四) 生成近义词重定向 """
+    def make_redirects_syn(self, file_syns, file_out):
+        """ 生成同义词重定向 """
         words = []
         # 1.读取重定向索引
-        file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
         syns = []
         with open(file_syns, 'r', encoding='utf-8') as fr:
             lines = fr.readlines()
@@ -141,13 +142,14 @@ class FuncLib():
                     }
                     syns.append(syn)
                 else:
-                    print(Fore.YELLOW + "INFO: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
+                    print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
                 i += 1
         # 2.生成重定向
         with open(file_out, 'w', encoding='utf-8') as fw:
             for syn in syns:
                 fw.write(f'{syn["syn"]}\n@@@LINK={syn["origin"]}\n</>\n')
                 words.append(syn["syn"])
+        print("重定向(同义词)词条已生成")
         return words
 
     def toc_all_to_index(self, file_toc_all, file_index_all):
@@ -202,7 +204,7 @@ class FuncLib():
                     }
                     pairs.append(pair)
                 else:
-                    print(Fore.YELLOW + "INFO: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
+                    print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
                 i += 1
         return pairs
 
@@ -218,7 +220,7 @@ class FuncLib():
                     if pat.match(line):
                         toc.append({"name": pat.match(line).group(1), "page": int(pat.match(line).group(2))})
                     else:
-                        print(Fore.YELLOW + "WARN: " + Fore.RESET + f"toc.txt 文件的第 {i} 行未识别, 已过滤")
+                        print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"toc.txt 文件的第 {i} 行未识别, 已过滤")
                     i = i + 1
             # 2.读取 index
             index = []
@@ -234,11 +236,11 @@ class FuncLib():
                             mess_flg = True
                         p_last = int(mth.group(2))
                     else:
-                        print(Fore.YELLOW + "WARN: " + Fore.RESET + f"index.txt 文件的第 {j} 行未识别, 已过滤")
+                        print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"index.txt 文件的第 {j} 行未识别, 已过滤")
                     j = j + 1
             if mess_flg:
                 index.sort(key=lambda x: x["page"], reverse=False)
-                print(Fore.YELLOW + "INFO: " + Fore.RESET + "索引存在乱序, 已按页码重排")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "索引存在乱序, 已按页码重排")
             # 3.排序合并 toc 和 index
             toc_sub = []
             with open(file_index_all, 'w', encoding='utf-8') as fw:
@@ -273,7 +275,7 @@ class FuncLib():
                 with open(fp, 'w', encoding='utf-8') as fw:
                     for t in toc_sub:
                         fw.write(t)
-                print(Fore.YELLOW + "INFO: " + Fore.RESET + "存在不确定的排序, 已存放在日志 _need_checking.log 中，请手动对照调整")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "存在不确定的排序, 已存放在日志 _need_checking.log 中，请手动对照调整")
         else:
             print(Fore.RED + "\n文件检查不通过, 请确保文件准备无误再执行程序" + Fore.RESET)
 
@@ -319,21 +321,18 @@ class FuncLib():
             os.rename(file_tmp, file_final)
         return entry_total
 
-    def generate_info_html(self, dict_name, file_info_raw, templ_choice):
-        # 创建好临时文件夹
-        file_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
-        if os.path.isfile(file_info):
-            os.remove(file_info)
-        # 生成临时 info.html
-        with open(file_info, 'w', encoding='utf-8') as fw:
-            if file_info_raw and os.path.exists(file_info_raw):
+    def generate_info_html(self, file_info_raw, file_out, dict_name, templ_choice=None):
+        with open(file_out, 'w', encoding='utf-8') as fw:
+            # 读取 info.html
+            if file_info_raw and os.path.isfile(file_info_raw):
                 with open(file_info_raw, 'r', encoding='utf-8') as fr:
                     fw.write(fr.read().rstrip())
+            # 打上 AMB 标志 (有模板则是制作, 没有则认为是打包)
             if templ_choice:
                 fw.write(f"\n<div><br/>{dict_name}, built with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}, based on template {templ_choice.upper()}.<br/></div>\n")
             else:
                 fw.write(f"\n<div><br/>{dict_name}, packed with AutoMdxBuilder {self.settings.version} on {datetime.now().strftime('%Y/%m/%d')}.<br/></div>\n")
-        return file_info
+        return True
 
     def get_item_list(self, dct):
         html = ''
@@ -424,7 +423,7 @@ class FuncLib():
                     # 收集子词条
                     tail["children"].append(mth.group(1))
                 else:
-                    print(f"第 {i} 行未匹配, 请检查")
+                    print(Fore.RED + "ERROR: " + Fore.RESET + f"第 {i} 行未匹配, 请检查")
                     done_flg = False
                     break
                 dcts.append(dct)
@@ -503,12 +502,10 @@ class FuncLib():
             blank_flg = True
         return blank_flg
 
-    def _prepare_imgs(self):
+    def _prepare_imgs(self, dir_imgs_in, dir_imgs_out):
         """ 图像预处理(重命名等) """
         # 图像处理判断
         copy_flg = True
-        dir_imgs_in = os.path.join(self.settings.dir_input, self.settings.dname_imgs)
-        dir_imgs_out = os.path.join(self.settings.dir_output_tmp, self.settings.dname_imgs)
         if os.path.exists(dir_imgs_out):
             size_in = sum(os.path.getsize(os.path.join(dir_imgs_in, f)) for f in os.listdir(dir_imgs_in) if os.path.isfile(os.path.join(dir_imgs_in, f)))
             size_out = sum(os.path.getsize(os.path.join(dir_imgs_out, f)) for f in os.listdir(dir_imgs_out) if os.path.isfile(os.path.join(dir_imgs_out, f)))
@@ -556,16 +553,17 @@ class FuncLib():
             img_file_new = os.path.join(dir_imgs_out, f_title_new+f_ext)
             if copy_flg:
                 shutil.copy(img_file, img_file_new)
-        return dir_imgs_out, imgs, n_len
+        print('图像处理完毕。')
+        return imgs, n_len
 
-    def _generate_navi_middle(self, proc_flg_toc):
+    def _generate_navi_middle(self, navi_items):
         """ 生成导航栏中间(链接)部分 """
         html = '<span class="navi-item-middle">'
-        if proc_flg_toc:
-            html += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
-            for item in self.settings.navi_items:
-                html += f'<span class="navi-item"><a href="entry://{self.settings.name_abbr}_{item["ref"]}">{item["a"]}</a></span>'
-        else:
+        if navi_items is None:
             html += '&#8197;&#12288;&#8197;'
+        else:
+            html += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
+            for item in navi_items:
+                html += f'<span class="navi-item"><a href="entry://{self.settings.name_abbr}_{item["ref"]}">{item["a"]}</a></span>'
         html += '</span>'
         return html

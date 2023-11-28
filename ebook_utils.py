@@ -83,7 +83,7 @@ class EbookUtils:
                         for entry in entries:
                             fw.write(entry["text"])
             else:
-                print(Fore.YELLOW + "WARN: " + Fore.RESET + "检测到词典并非由 AMB 生成, 不保证词条顺序的准确还原")
+                print(Fore.YELLOW + "INFO: " + Fore.RESET + "检测到词典并非由 AMB 生成, 不保证词条顺序的准确还原")
         elif os.path.isfile(mfile) and mfile.endswith('.mdd'):
             cur_dir, mname = os.path.split(mfile)
             out_dir = os.path.join(os.path.splitext(mfile)[0], 'data')
@@ -110,7 +110,7 @@ class EbookUtils:
             done_flg = False
         return done_flg
 
-    def pack_to_mdict(self, file_final_txt, file_dict_info, dir_data, dir_output):
+    def pack_to_mdict(self, dir_output, file_final_txt, file_dict_info, dir_data):
         """ 打包 mdx/mdd (取代 MdxBuilder.exe) """
         mdx_flg = True
         mdd_flg = True
@@ -314,12 +314,11 @@ class EbookUtils:
         os.system(f'{file_exe} extract "{file_pdf}"')
         os.chdir(self.settings.dir_bundle)
         # 2.remove to destination
-        img_exts = ['jpg', 'jpeg', 'jp2', 'png', 'gif', 'bmp', 'tif', 'tiff']
         imgs = []
         for fname in os.listdir(dir_tmp_me):
-            ext = fname.split('.')[1].lower()
-            if ext in img_exts:
-                imgs.append({"path": os.path.join(dir_tmp_me, fname), "ext": '.'+ext})
+            ext = os.path.splitext(fname)[1].lower()
+            if ext in self.settings.img_exts:
+                imgs.append({"path": os.path.join(dir_tmp_me, fname), "ext": ext})
         if not os.path.exists(dir_out):
             os.makedirs(dir_out)
         imgs.sort(key=lambda x: x["path"], reverse=False)
@@ -392,11 +391,10 @@ class EbookUtils:
             os.makedirs(dir_pdf_merge)
         file_pcs = os.path.join(self.settings.dir_lib, 'MuPDF_pcs.txt')
         # read image files to get sizes
-        img_exts = ['.jpg', 'jpeg', '.jp2', '.png', '.gif', '.bmp', '.tif', '.tiff']
         imgs = []
         for fname in os.listdir(dir_imgs):
             fp = os.path.join(dir_imgs, fname)
-            if os.path.splitext(fp)[1].lower() in img_exts:
+            if os.path.splitext(fp)[1].lower() in self.settings.img_exts:
                 img = {
                     "fname": fname,
                     "path": fp,

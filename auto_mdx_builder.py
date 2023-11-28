@@ -200,8 +200,9 @@ class AutoMdxBuilder:
         if self.settings.templ_choice in ('a', 'A'):
             """ 制作图像词典 (模板A) """
             # 生成 txt 源文本
-            proc_flg, file_final_txt, dir_imgs_out, file_dict_info = ImgDictAtmpl(self).make_source_file()
-            if proc_flg:
+            make_result = ImgDictAtmpl(self).make_source_file()
+            if make_result:
+                file_final_txt, dir_imgs, file_dict_info = make_result
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
@@ -211,12 +212,13 @@ class AutoMdxBuilder:
                 shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
-                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_imgs)
         elif self.settings.templ_choice in ('b', 'B'):
             """ 制作图像词典 (模板B) """
             # 生成 txt 源文本
-            proc_flg, file_final_txt, dir_imgs_out, file_dict_info = ImgDictBtmpl(self).make_source_file()
-            if proc_flg:
+            make_result = ImgDictBtmpl(self).make_source_file()
+            if make_result:
+                file_final_txt, dir_imgs, file_dict_info = make_result
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
@@ -226,12 +228,13 @@ class AutoMdxBuilder:
                 shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
-                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_imgs_out, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_imgs)
         elif self.settings.templ_choice in ('c', 'C'):
             """ 制作文本词典 (模板C) """
             # 生成 txt 源文本
-            proc_flg, file_final_txt, file_dict_info = TextDictCtmpl(self).make_source_file()
-            if proc_flg:
+            make_result = TextDictCtmpl(self).make_source_file()
+            if make_result:
+                file_final_txt, dir_data, file_dict_info = make_result
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
@@ -241,15 +244,13 @@ class AutoMdxBuilder:
                 shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
-                dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
-                if not os.path.exists(dir_data) or len(os.listdir(dir_data)) == 0:
-                    dir_data = None
-                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
+                done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_data)
         elif self.settings.templ_choice in ('d', 'D'):
             """ 制作文本词典 (模板D) """
             # 生成 txt 源文本
-            proc_flg, file_final_txt, file_dict_info = TextDictDtmpl(self).make_source_file()
-            if proc_flg:
+            make_result = TextDictDtmpl(self).make_source_file()
+            if make_result:
+                file_final_txt, dir_data, file_dict_info = make_result
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
@@ -259,14 +260,9 @@ class AutoMdxBuilder:
                 shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
-                dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
-                if not os.path.exists(dir_data) or len(os.listdir(dir_data)) == 0:
-                    dir_data = None
-                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, self.settings.dir_output)
-        else:
-            pass
+                done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_data)
         if done_flg:
-            print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！" + Fore.RESET)
+            print("\n打包完毕。\n------------------" + Fore.GREEN + "\n\n恭喜, 词典已生成！" + Fore.RESET)
 
     def _restore_raw(self, xfile, outside_flg):
         """ 将词典还原为原材料 """
@@ -338,7 +334,7 @@ class AutoMdxBuilder:
                     shutil.rmtree(dir_data)
                 self.utils.mdict(['-x', file_mdd, '-d', dir_data])
             else:
-                print(Fore.YELLOW + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
             print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "词典并非由 AutoMdxBuilder 制作, 不支持还原")
@@ -369,17 +365,17 @@ class AutoMdxBuilder:
                         with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
                             fw.write(text)
                         if line_num > 500:
-                            print(Fore.YELLOW + "INFO: " + Fore.RESET + "书签超过 500 行, 请后续确认是否包含索引, 是的话建议改名为 toc_all.txt")
+                            print(Fore.MAGENTA + "WARN: " + Fore.RESET + "书签超过 500 行, 请后续确认是否包含索引, 是的话建议改名为 toc_all.txt")
             except UnicodeDecodeError:
                 shutil.copy(os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt"), os.path.join(out_dir, "[utf-16]toc.txt"))
-                print(Fore.YELLOW + "WARN: " + Fore.RESET + "书签中存在无法识别的字符, 已输出为 utf-16 编码")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "书签中存在无法识别的字符, 已输出为 utf-16 编码")
             with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r', encoding='utf-16le') as fr:
                 mt = re.search(r'(?<=BasePage=)(\d+)', fr.read())
                 if mt:
                     body_start = mt.group(0)
                 else:
                     body_start = 1
-                    print(Fore.YELLOW + "INFO: " + Fore.RESET + "未识别到正文起始页码, 已设置默认值 1")
+                    print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到正文起始页码, 已设置默认值 1")
             # 2.生成 build.toml
             shutil.copy(os.path.join(self.settings.dir_lib, "build.toml"), os.path.join(out_dir, "build.toml"))
             with open(os.path.join(out_dir, "build.toml"), 'r+', encoding='utf-8') as fr:
@@ -415,14 +411,14 @@ class AutoMdxBuilder:
                         body_start = mt_body_start.group(0)
                     else:
                         body_start = 1
-                        print(Fore.YELLOW + "INFO: " + Fore.RESET + "未识别到正文起始页码, 已设置默认值 1")
+                        print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到正文起始页码, 已设置默认值 1")
                     if mt_name:
                         name = mt_name.group(0)
                     else:
                         name = os.path.split(input_path)[1]
                 os.remove(bkmk_itf)
             else:
-                print(Fore.YELLOW + "INFO: " + Fore.RESET + "未识别到书籍信息")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到书籍信息")
             # 3.生成 build.toml
             shutil.copy(os.path.join(self.settings.dir_lib, "build.toml"), os.path.join(out_dir, "build.toml"))
             with open(os.path.join(out_dir, "build.toml"), 'r+', encoding='utf-8') as fr:
@@ -482,7 +478,7 @@ class AutoMdxBuilder:
             else:
                 pass
         if not toc_flg:
-            print(Fore.YELLOW + "WARN: " + Fore.RESET + "未找到 toc.txt/index_all.txt, 生成的 PDF 将不带书签")
+            print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未找到 toc.txt/index_all.txt, 生成的 PDF 将不带书签")
         # 2.将图片合成PDF
         if os.path.isdir(os.path.join(dir_amb, 'imgs')):
             self.utils.combine_img_to_pdf_fp2p(os.path.join(dir_amb, 'imgs'), out_file)
