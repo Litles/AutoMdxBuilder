@@ -3,7 +3,7 @@
 # @Date    : 2023-11-16 00:00:58
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.5
+# @Version : 1.6
 
 import os
 import sys
@@ -17,7 +17,7 @@ class Settings:
     # 【提示】 AMB 1.4 及以后的版本已不在此处配置词典, 请移步 build.toml 文件
     def __init__(self):
         # 程序版本
-        self.version = '1.5'
+        self.version = '1.6'
 
         # 输入文件
         self.dname_imgs = 'imgs'
@@ -57,6 +57,11 @@ class Settings:
         self.css_btmpl = 'btmpl.css'
         self.css_ctmpl = 'ctmpl.css'
         self.css_dtmpl = 'dtmpl.css'
+        self.css_split_2 = 'auto_split_2.css'
+
+        # 预设值
+        self.split_column = 1
+        self.max_body = 99999
 
     def load_build_toml(self, file_toml, pdf_flg=False, outside_flg=True):
         build_flg = False
@@ -74,8 +79,12 @@ class Settings:
                 if self.templ_choice == 'A':
                     self.body_start = build["template"]["a"]["body_start"]  # 正文起始页为第几张图(>=1)
                     self.navi_items = build["template"]["a"].get("navi_items", [])
+                    self.split_column = build["template"]["a"].get("auto_split_column", 1)
+                    self.max_body = build["template"]["a"].get("max_body", 99999)
                 elif self.templ_choice == 'B':
                     self.body_start = build["template"]["b"]["body_start"]  # 正文起始页为第几张图(>=1)
+                    self.split_column = build["template"]["b"].get("auto_split_column", 1)
+                    self.max_body = build["template"]["b"].get("max_body", 99999)
                 # 设定其他变量
                 self.fname_final_txt = f"{self.name}.txt"
                 self.fname_css = f"{self.name_abbr.lower()}.css"

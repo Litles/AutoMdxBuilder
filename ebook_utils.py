@@ -3,7 +3,7 @@
 # @Date    : 2023-11-15 18:43:07
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.5
+# @Version : 1.6
 
 import os
 import re
@@ -257,7 +257,7 @@ class EbookUtils:
         tmp_txt = os.path.join(dir_tmp_mp, 'text.txt')
         # 判断是文字版还是图片版PDF
         img_pdf_flg = True
-        os.system(f'{file_exe} draw -o {tmp_txt} -F text {file_pdf} 2-11')
+        os.system(f'{file_exe} draw -o {tmp_txt} -F text "{file_pdf}" 2-11')
         with open(tmp_txt, 'r', encoding='utf-8') as fr:
             word = re.sub(r'[\r\n\s]', '', fr.read())
             if len(word) > 50:
@@ -277,7 +277,7 @@ class EbookUtils:
             os.makedirs(dir_out)
         file_png = os.path.join(dir_out, '%06d.png')
         # 开始转换
-        os.system(f'{file_exe} draw -o {file_png} -F png -r {str(dpi)} {file_pdf}')
+        os.system(f'{file_exe} draw -o "{file_png}" -F png -r {str(dpi)} "{file_pdf}"')
         print('转换完成！')
 
     # def convert_pdf_to_imgs_fitz(self, file_pdf, dir_out, dpi=300):
@@ -448,7 +448,7 @@ class EbookUtils:
             pdf_str = pdf_str + ' ' + tmp_pdf
             k += 1
         # output final single file
-        os.system(f'{file_exe} merge -o {file_pdf} {pdf_str}')
+        os.system(f'{file_exe} merge -o "{file_pdf}" {pdf_str}')
         shutil.rmtree(dir_pcs)
         shutil.rmtree(dir_pdf_frag)
         shutil.rmtree(dir_pdf_merge)

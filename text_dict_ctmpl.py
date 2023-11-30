@@ -3,7 +3,7 @@
 # @Date    : 2023-11-16 00:00:41
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.5
+# @Version : 1.6
 
 import os
 import re

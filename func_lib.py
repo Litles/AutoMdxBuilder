@@ -3,10 +3,11 @@
 # @Date    : 2023-11-16 00:00:53
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.5
+# @Version : 1.6
 
 import os
 import re
+from copy import copy
 import shutil
 from datetime import datetime
 # import chardet
@@ -18,41 +19,6 @@ class FuncLib():
     """ functions for invoking """
     def __init__(self, amb):
         self.settings = amb.settings
-
-    def make_entries_img(self, dir_imgs_in, dir_imgs_out, file_out, navi_items):
-        """ 生成图像词条 """
-        imgs, n_len = self._prepare_imgs(dir_imgs_in, dir_imgs_out)
-        # 开始生成词条
-        p_total = len(imgs)
-        with open(file_out, 'w', encoding='utf-8') as fw:
-            part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
-            part_middle = self._generate_navi_middle(navi_items)
-            for i in range(p_total):
-                img = imgs[i]
-                part_title = f'{img["title"]}\n'
-                part_img = '<div class="main-img">'
-                part_img += f'<div class="left"><div class="pic"><img src="/{img["name"]}"></div></div>'
-                part_img += f'<div class="right"><div class="pic"><img src="/{img["name"]}"></div></div>'
-                part_img += '</div>\n'
-                # 生成翻页部分(首末页特殊)
-                # 备用: [☚,☛] [☜,☞] [◀,▶] [上一页,下一页] [☚&#12288;&#8197;,&#8197;&#12288;☛]
-                if i == 0:
-                    part_left = ''
-                    part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
-                elif i == p_total-1:
-                    part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
-                    part_right = ''
-                else:
-                    part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
-                    part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
-                # 组合
-                part_top = '<div class="top-navi">' + part_left + part_middle + part_right + '</div>\n'
-                part_bottom = '<div class="bottom-navi">' + part_left + part_middle + part_right + '</div>\n'
-                # 将完整词条写入文件
-                fw.write(part_title+part_css+part_top+part_img+part_bottom+'</>\n')
-        print("图像词条已生成")
-        # p_total 未返回, 备用
-        return imgs, n_len
 
     def index_to_toc(self, file_index_all, file_toc_all):
         """ 处理成 toc_all.txt 文件 """
@@ -94,6 +60,7 @@ class FuncLib():
                         level = dcts[x]["level"]
                         name = dcts[x]["name"]
                         page = dcts[x]["page"].strip()
+                        # 如果为空向后检索页码来填充
                         if page == '':
                             for d in dcts[x+1:]:
                                 if d["page"].strip() != '':
@@ -154,25 +121,40 @@ class FuncLib():
 
     def toc_all_to_index(self, file_toc_all, file_index_all):
         """ 处理成 index_all.txt 文件 """
-        done_flg = True
         if self.text_file_check(file_toc_all) == 2:
+            # 读取 toc_all.txt
             pairs = self.read_toc_file(file_toc_all)
+            # 识别收集非章节的词条索引
+            index, entries_tmp = [], []
+            child_flg = False
+            for i in range(1, len(pairs)):
+                if pairs[i]["level"] == pairs[i-1]["level"]:
+                    if child_flg:
+                        # 满足条件, 继续收集
+                        entries_tmp.append(i)
+                elif pairs[i]["level"] > pairs[i-1]["level"]:
+                    # 是展开节点, 开启收集
+                    entries_tmp = []
+                    child_flg = True
+                    entries_tmp.append(i)
+                else:
+                    # 展开结束, 归档, 清空篮子
+                    index += entries_tmp
+                    entries_tmp = []
+                    child_flg = False
+            # 补漏(因为最末一次收集可能未归档)
+            if len(entries_tmp) > 0:
+                index += entries_tmp
+            # 生成 index_all.txt
             with open(file_index_all, 'w', encoding='utf-8') as fw:
-                n_total = len(pairs)
-                for i in range(n_total):
-                    try:
-                        l_after = pairs[i+1]["level"]
-                    except IndexError:
-                        l_after = 0
-                    pair = pairs[i]
-                    # 顶级章节, 或者将要展开
-                    if pair["level"] == 0 or pair["level"] < l_after:
-                        fw.write('【L'+str(pair["level"])+'】'+pair["title"]+'\t'+str(pair["page"])+'\n')
+                for i in range(len(pairs)):
+                    if i in index:
+                        fw.write(f'{pairs[i]["title"]}\t{str(pairs[i]["page"])}\n')
                     else:
-                        fw.write(pair["title"]+'\t'+str(pair["page"])+'\n')
+                        fw.write(f'【L{str(pairs[i]["level"])}】{pairs[i]["title"]}\t{str(pairs[i]["page"])}\n')
+            return True
         else:
-            done_flg = False
-        return done_flg
+            return False
 
     def toc_to_index(self, file_toc, file_index_all):
         """ 处理成 index_all.txt 文件 """
@@ -181,7 +163,7 @@ class FuncLib():
             pairs = self.read_toc_file(file_toc)
             with open(file_index_all, 'w', encoding='utf-8') as fw:
                 for pair in pairs:
-                    fw.write('【L'+str(pair["level"])+'】'+pair["title"]+'\t'+str(pair["page"])+'\n')
+                    fw.write(f'【L{str(pair["level"])}】{pair["title"]}\t{str(pair["page"])}\n')
         else:
             done_flg = False
         return done_flg
@@ -502,7 +484,7 @@ class FuncLib():
             blank_flg = True
         return blank_flg
 
-    def _prepare_imgs(self, dir_imgs_in, dir_imgs_out):
+    def prepare_imgs(self, dir_imgs_in, dir_imgs_out):
         """ 图像预处理(重命名等) """
         # 图像处理判断
         copy_flg = True
@@ -555,15 +537,3 @@ class FuncLib():
                 shutil.copy(img_file, img_file_new)
         print('图像处理完毕。')
         return imgs, n_len
-
-    def _generate_navi_middle(self, navi_items):
-        """ 生成导航栏中间(链接)部分 """
-        html = '<span class="navi-item-middle">'
-        if navi_items is None:
-            html += '&#8197;&#12288;&#8197;'
-        else:
-            html += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
-            for item in navi_items:
-                html += f'<span class="navi-item"><a href="entry://{self.settings.name_abbr}_{item["ref"]}">{item["a"]}</a></span>'
-        html += '</span>'
-        return html

@@ -11,9 +11,9 @@ simp_trad_flg = false  # 是否需要繁简通搜
 # 图像词典 (模板A)
 #   必需材料: imgs,  index.txt
 #   可选材料: toc.txt,  syns.txt,  info.html
-
-# 正文起始页为第几张图(>=1)
-body_start = 62
+body_start = 62  # 正文起始页为第几张图(>=1)
+auto_split_column = 1  # （可选）自适应分栏数 (默认1表示不分栏)
+max_body = 99999  # （可选）最大正文词条索引 (用于自适应分栏范围的判断, 默认到最后一页)
 
 # （可选）导航栏链接, 有目录 (toc.txt) 就可以设置
 #navi_items = [
@@ -31,9 +31,9 @@ body_start = 62
 # 图像词典 (模板B)
 #   必需材料: imgs,  index_all.txt
 #   可选材料: syns.txt,  info.html
-
-# 正文起始页为第几张图(>=1)
-body_start = 61
+body_start = 62  # 正文起始页为第几张图(>=1)
+auto_split_column = 1  # （可选）自适应分栏数 (默认1表示不分栏)
+max_body = 99999  # （可选）最大正文词条索引 (用于自适应分栏范围的判断, 默认到最后一页)
 
 
 [template.c]

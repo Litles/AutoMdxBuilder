@@ -3,10 +3,11 @@
 # @Date    : 2023-11-16 00:00:27
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.5
+# @Version : 1.6
 
 import os
 import re
+from copy import copy
 from tomlkit import dumps, loads, array, comment, nl
 from colorama import Fore
 
@@ -41,9 +42,9 @@ class ImgDictAtmpl:
             file_5 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_st)  # 繁简重定向
             # (1) 生成主体(图像)词条
             if check_result[1]:
-                imgs, n_len = self.func.make_entries_img(check_result[2], dir_imgs_tmp, file_1, self.settings.navi_items)
+                imgs, n_len = self._make_entries_img(check_result[2], dir_imgs_tmp, file_1, self.settings.navi_items)
             else:
-                imgs, n_len = self.func.make_entries_img(check_result[2], dir_imgs_tmp, file_1, None)
+                imgs, n_len = self._make_entries_img(check_result[2], dir_imgs_tmp, file_1)
             # (2) 生成总目词条
             if check_result[1]:
                 self._make_entry_toc(check_result[1], file_2)
@@ -66,7 +67,7 @@ class ImgDictAtmpl:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
 
-    def extract_final_txt(self, file_final_txt, out_dir, dict_name):
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name, file_css=None):
         """ 从模板A词典的源 txt 文本中提取 index, toc, syns 信息 """
         # 1.提取信息
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
@@ -74,15 +75,15 @@ class ImgDictAtmpl:
             # 识别 name_abbr, body_start
             body_start = 1
             names = []
-            for m in re.findall(r'^<div class="main-img"><div class="left"><div class="pic"><img src="/([A-Z|\d]+)_A(\d+)\.\w+">', text, flags=re.M):
+            for m in re.findall(r'^<div class="main-img">.*?<div class="pic"><img src="/([a-zA-Z|\d]+)_A(\d+)\.\w+">', text, flags=re.M):
                 if int(m[1])+1 > body_start:
                     body_start = int(m[1])+1
                 if m[0].upper() not in names:
                     names.append(m[0].upper())
             if len(names) > 0:
-                name_abbr = names[0]
+                name_abbr = names[0].upper()
             else:
-                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典首字母缩写, 已设置默认值")
                 name_abbr = 'XXXXCD'
             # 提取 navi_items
             navi_items = array()
@@ -144,6 +145,12 @@ class ImgDictAtmpl:
         self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
         self.settings.build["template"]["a"]["body_start"] = body_start
+        # 判断分栏选项
+        if file_css and os.path.split(file_css)[1].lower() == name_abbr.lower()+'.css':
+            with open(file_css, 'r', encoding='utf-8') as fr:
+                if not re.search(r'/\*<insert_css: auto_split>\*/', fr.read(), flags=re.I):
+                    self.settings.build["template"]["a"]["auto_split_column"] = 2
+        # 判断 navi_items
         if len(navi_items) > 0:
             build_str = re.sub(r'[\r\n]+#navi_items = \[.*?#\][^\r\n]*?', '', dumps(self.settings.build), flags=re.S+re.I)
             build_str = re.sub(r'[\r\n]+#\s*?（可选）导航栏链接.+$', '', build_str, flags=re.M)
@@ -228,6 +235,56 @@ class ImgDictAtmpl:
         print("重定向(词目)词条已生成")
         return headwords
 
+    def _make_entries_img(self, dir_imgs_in, dir_imgs_out, file_out, navi_items=None):
+        """ 生成图像词条 """
+        imgs, n_len = self.func.prepare_imgs(dir_imgs_in, dir_imgs_out)
+        # 开始生成词条
+        p_total = len(imgs)
+        with open(file_out, 'w', encoding='utf-8') as fw:
+            part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
+            part_middle = self._generate_navi_middle(navi_items)
+            for i in range(p_total):
+                img = imgs[i]
+                part_title = f'{img["title"]}\n'
+                part_img = '<div class="main-img">'
+                if self.settings.split_column == 2 and (i >= self.settings.body_start-1 and i <= self.settings.max_body+self.settings.body_start-2):
+                    part_img += f'<div class="left"><div class="pic"><img src="/{img["name"]}"></div></div>'
+                    part_img += f'<div class="right"><div class="pic"><img src="/{img["name"]}"></div></div>'
+                else:
+                    part_img += f'<div class="pic"><img src="/{img["name"]}"></div>'
+                part_img += '</div>\n'
+                # 生成翻页部分(首末页特殊)
+                # 备用: [☚,☛] [☜,☞] [◀,▶] [上一页,下一页] [☚&#12288;&#8197;,&#8197;&#12288;☛]
+                if i == 0:
+                    part_left = ''
+                    part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
+                elif i == p_total-1:
+                    part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
+                    part_right = ''
+                else:
+                    part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
+                    part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
+                # 组合
+                part_top = '<div class="top-navi">' + part_left + part_middle + part_right + '</div>\n'
+                part_bottom = '<div class="bottom-navi">' + part_left + part_middle + part_right + '</div>\n'
+                # 将完整词条写入文件
+                fw.write(part_title+part_css+part_top+part_img+part_bottom+'</>\n')
+        print("图像词条已生成")
+        # p_total 未返回, 备用
+        return imgs, n_len
+
+    def _generate_navi_middle(self, navi_items):
+        """ 生成导航栏中间(链接)部分 """
+        html = '<span class="navi-item-middle">'
+        if navi_items is None:
+            html += '&#8197;&#12288;&#8197;'
+        else:
+            html += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
+            for item in navi_items:
+                html += f'<span class="navi-item"><a href="entry://{self.settings.name_abbr}_{item["ref"]}">{item["a"]}</a></span>'
+        html += '</span>'
+        return html
+
     def _check_raw_files(self):
         """ 检查原材料
         * 必要文本存在(文本编码均要是 utf-8 无 bom)
@@ -254,7 +311,10 @@ class ImgDictAtmpl:
                 for line in lines:
                     if pat.match(line):
                         i = int(pat.match(line).group(2))
+                        min_index = min(min_index, i)
                         max_index = max(max_index, i)
+                if self.settings.max_body == 99999:
+                    self.settings.max_body = copy(max_index)
             # 2.检查目录文件: 若存在就要合格
             toc_check_num = self.func.text_file_check(file_toc)
             if toc_check_num == 0:
@@ -268,6 +328,7 @@ class ImgDictAtmpl:
                         if pat.match(line):
                             i = int(pat.match(line).group(3))
                             min_index = min(min_index, i)
+                            max_index = max(max_index, i)
                 if self.settings.body_start < abs(min_index) + 1:
                     print(Fore.RED + "ERROR: " + Fore.RESET + "正文起始页设置有误(小于最小索引)")
                 else:
@@ -282,8 +343,10 @@ class ImgDictAtmpl:
                 print(Fore.RED + "ERROR: " + Fore.RESET + f"图像文件夹 {dir_imgs} 不存在或为空")
             elif n < self.settings.body_start:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "图像数量不足(少于起始页码)")
-            elif n < max_index - min_index:
+            elif n < max_index-min_index:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "图像数量不足(少于索引范围)")
+            elif n < max_index+self.settings.body_start-1:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "图像数量不足(少于设定范围)")
             else:
                 check_result.append(dir_imgs)
             # 4.检查同义词文件: 若存在就要合格

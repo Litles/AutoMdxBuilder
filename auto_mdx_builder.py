@@ -3,9 +3,9 @@
 # @Date    : 2023-11-16 00:00:17
 # @Author  : Litles (litlesme@gmail.com)
 # @Link    : https://github.com/Litles
-# @Version : 1.5
+# @Version : 1.6
 
-import logging
+# import logging
 import traceback
 import os
 import re
@@ -151,6 +151,15 @@ class AutoMdxBuilder:
             else:
                 print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码" + Fore.RESET)
         elif sel == 41:
+            # --- 从 PDF 提取图片 (PDF补丁丁) ---
+            p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
+            if os.path.isfile(p) and p.lower().endswith('.pdf'):
+                fname = os.path.split(p)[1]
+                out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
+                self.utils.extract_pdf_to_imgs_pdfpatcher(p, out_dir)
+            else:
+                print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
+        elif sel == 42:
             # --- 从 PDF 提取图片 (MuPDF) ---
             p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
             if os.path.isfile(p) and p.lower().endswith('.pdf'):
@@ -159,7 +168,7 @@ class AutoMdxBuilder:
                 self.utils.extract_pdf_to_imgs(p, out_dir)
             else:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
-        elif sel == 42:
+        elif sel == 43:
             # --- 将 PDF 转换成图片 (MuPDF) ---
             p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
             if os.path.isfile(p) and p.lower().endswith('.pdf'):
@@ -172,15 +181,15 @@ class AutoMdxBuilder:
                     self.utils.convert_pdf_to_imgs(p, out_dir)
             else:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
-        elif sel == 43:
+        elif sel == 44:
             # --- 将 图片 合成 PDF (MuPDF) ---
-            p = input("请输入图片所在文件夹路径: ").strip('"\\').rstrip('/')
+            p = input("请输入图片所在文件夹路径(不能包含空格): ").strip('"\\').rstrip('/')
             if os.path.isdir(p):
                 out_file = p+'.pdf'
                 self.utils.combine_img_to_pdf(p, out_file)
             else:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
-        elif sel == 44:
+        elif sel == 45:
             # --- PDF 书签导出/导入（FreePic2Pdf） ---
             file_pdf = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
             dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"\\').rstrip('/')
@@ -206,10 +215,17 @@ class AutoMdxBuilder:
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
-                # 拷贝模板 css 文件
+                # 生成 css 文件
                 file_css_tmpl = os.path.join(self.settings.dir_lib, self.settings.css_atmpl)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
-                shutil.copy(file_css_tmpl, file_css)
+                if self.settings.split_column == 2:
+                    with open(os.path.join(self.settings.dir_lib, self.settings.css_split_2), 'r', encoding='utf-8') as fr:
+                        s = fr.read()
+                    with open(file_css, 'w', encoding='utf-8') as fw:
+                        with open(file_css_tmpl, 'r', encoding='utf-8') as fr:
+                            fw.write(fr.read().replace('/*<insert_css: auto_split>*/', s))
+                else:
+                    shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
                 done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_imgs)
@@ -222,10 +238,17 @@ class AutoMdxBuilder:
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
-                # 拷贝模板 css 文件
+                # 生成 css 文件
                 file_css_tmpl = os.path.join(self.settings.dir_lib, self.settings.css_btmpl)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
-                shutil.copy(file_css_tmpl, file_css)
+                if self.settings.split_column == 2:
+                    with open(os.path.join(self.settings.dir_lib, self.settings.css_split_2), 'r', encoding='utf-8') as fr:
+                        s = fr.read()
+                    with open(file_css, 'w', encoding='utf-8') as fw:
+                        with open(file_css_tmpl, 'r', encoding='utf-8') as fr:
+                            fw.write(fr.read().replace('/*<insert_css: auto_split>*/', s))
+                else:
+                    shutil.copy(file_css_tmpl, file_css)
                 # 开始打包
                 print('\n------------------\n开始打包……\n')
                 done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_imgs)
@@ -238,7 +261,7 @@ class AutoMdxBuilder:
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
-                # 拷贝模板 css 文件
+                # 生成 css 文件
                 file_css_tmpl = os.path.join(self.settings.dir_lib, self.settings.css_ctmpl)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 shutil.copy(file_css_tmpl, file_css)
@@ -254,7 +277,7 @@ class AutoMdxBuilder:
                 # 创建输出文件夹
                 if not os.path.exists(self.settings.dir_output):
                     os.makedirs(self.settings.dir_output)
-                # 拷贝模板 css 文件
+                # 生成 css 文件
                 file_css_tmpl = os.path.join(self.settings.dir_lib, self.settings.css_dtmpl)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
                 shutil.copy(file_css_tmpl, file_css)
@@ -262,7 +285,7 @@ class AutoMdxBuilder:
                 print('\n------------------\n开始打包……\n')
                 done_flg = self.utils.pack_to_mdict(self.settings.dir_output, file_final_txt, file_dict_info, dir_data)
         if done_flg:
-            print("\n打包完毕。\n------------------" + Fore.GREEN + "\n\n恭喜, 词典已生成！" + Fore.RESET)
+            print("\n打包完毕。" + Fore.GREEN + "\n\n恭喜, 词典已生成！" + Fore.RESET)
 
     def _restore_raw(self, xfile, outside_flg):
         """ 将词典还原为原材料 """
@@ -311,12 +334,16 @@ class AutoMdxBuilder:
                 with open(os.path.join(out_dir, 'info.html'), 'w', encoding='utf-8') as fw:
                     fw.write(text)
             # 提取 index, index_all, syns 等信息
+            file_css = None
+            for f in os.listdir(dir_input):
+                if os.path.splitext(f)[1].lower() == '.css':
+                    file_css = os.path.join(dir_input, f)
             if tmp_final_txt:
                 # 选择函数进行处理
                 if templ_choice == 'A':
-                    ImgDictAtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
+                    ImgDictAtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name, file_css)
                 elif templ_choice == 'B':
-                    ImgDictBtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
+                    ImgDictBtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name, file_css)
                 elif templ_choice == 'C':
                     TextDictCtmpl(self).extract_final_txt(tmp_final_txt, out_dir, dict_name)
                 elif templ_choice == 'D':
@@ -344,8 +371,9 @@ class AutoMdxBuilder:
         """ 从 PDF文件/pdg文件夹 生成 amb 文件夹 """
         # 0.准备路径相关
         dir_bkmk = os.path.join(self.settings.dir_output_tmp, 'bkmk')
-        if not os.path.exists(dir_bkmk):
-            os.makedirs(dir_bkmk)
+        if os.path.exists(dir_bkmk):
+            shutil.rmtree(dir_bkmk)
+        os.makedirs(dir_bkmk)
         # 开始处理
         if pdf_flg:
             fname = os.path.split(input_path)[1]
@@ -443,10 +471,11 @@ class AutoMdxBuilder:
             out_file = os.path.join(dir_amb, self.settings.name+'.pdf')
         dir_bkmk_bk = os.path.join(self.settings.dir_lib, 'bkmk')
         dir_bkmk = os.path.join(self.settings.dir_output_tmp, 'bkmk')
-        if not os.path.exists(dir_bkmk):
-            os.makedirs(dir_bkmk)
-            shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf"), os.path.join(dir_bkmk, "FreePic2Pdf.itf"))
-            shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt"), os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt"))
+        if os.path.exists(dir_bkmk):
+            shutil.rmtree(dir_bkmk)
+        os.makedirs(dir_bkmk)
+        shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf"), os.path.join(dir_bkmk, "FreePic2Pdf.itf"))
+        shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt"), os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt"))
         # 1.生成临时书签
         with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-8') as fr:
             text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start), fr.read())
@@ -509,15 +538,16 @@ def print_menu():
     print(Fore.CYAN + "  31" + Fore.RESET + ".从原材料还原 PDF")
     print(Fore.CYAN + "  32" + Fore.RESET + ".从 index_all.txt 还原 toc_all.txt")
     print("\n(四) 其他工具")
-    print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片 (MuPDF)")
-    print(Fore.CYAN + "  42" + Fore.RESET + ".将 PDF 转换成图片 (MuPDF)")
-    print(Fore.CYAN + "  43" + Fore.RESET + ".将 图片 合成PDF (MuPDF)")
-    print(Fore.CYAN + "  44" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
+    print(Fore.CYAN + "  41" + Fore.RESET + ".从 PDF 提取图片 (PDF补丁丁)")
+    print(Fore.CYAN + "  42" + Fore.RESET + ".从 PDF 提取图片 (MuPDF)")
+    print(Fore.CYAN + "  43" + Fore.RESET + ".将 PDF 转换成图片 (MuPDF)")
+    print(Fore.CYAN + "  44" + Fore.RESET + ".将 图片 合成PDF (MuPDF)")
+    print(Fore.CYAN + "  45" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
 
 
 def main():
-    just_fix_windows_console()
     # 程序开始
+    tmp_set = Settings()
     print(Fore.CYAN + f"欢迎使用 AutoMdxBuilder {tmp_set.version}, 下面是功能选单:" + Fore.RESET)
     while True:
         print_menu()
@@ -537,10 +567,14 @@ def main():
 
 
 if __name__ == '__main__':
-    tmp_set = Settings()
-    logging.basicConfig(format='%(asctime)s | %(message)s', filename=tmp_set.file_log, filemode='w', level=logging.INFO)
+    just_fix_windows_console()
+    # logging.basicConfig(format='%(asctime)s | %(message)s', filename=tmp_set.file_log, filemode='w', level=logging.INFO)
     try:
         main()
-        logging.info('The program worked fine.')
+        # logging.info('The program worked fine.')
     except:
-        logging.error(traceback.format_exc())
+        # logging.error(traceback.format_exc())
+        print(traceback.format_exc())
+        print(Fore.RED + "ERROR: " + Fore.RESET + "由于上述原因, 程序已中止运行")
+        print('\n\n------------------------------------')
+        input("回车退出程序:")
