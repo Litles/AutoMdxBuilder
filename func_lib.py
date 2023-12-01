@@ -463,6 +463,24 @@ class FuncLib():
                     dct["entry_list"] = False
         return done_flg, dcts
 
+    def simp_trad_trans(self, file_in, file_out, trans_type):
+        """ 繁简转换 """
+        if trans_type == 'T':
+            converter_s2t = OpenCC('s2t.json')
+            with open(file_out, 'w', encoding='utf-8') as fw:
+                with open(file_in, 'r', encoding='utf-8') as fr:
+                    for line in fr:
+                        # 简转繁
+                        fw.write(converter_s2t.convert(line))
+        else:
+            converter_t2s = OpenCC('t2s.json')
+            with open(file_out, 'w', encoding='utf-8') as fw:
+                with open(file_in, 'r', encoding='utf-8') as fr:
+                    for line in fr:
+                        # 繁转简
+                        fw.write(converter_t2s.convert(line))
+        print(f"\n转换结果已生成: {file_out}")
+
     # def _detect_code(self, text_file):
     #     with open(text_file, 'rb') as frb:
     #         data = frb.read()

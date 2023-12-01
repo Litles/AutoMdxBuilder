@@ -95,6 +95,21 @@ class AutoMdxBuilder:
             file_index = input("(2) 请输入 index.txt 的文件路径: ").strip('"')
             file_index_all = os.path.join(os.path.split(file_index)[0], 'index_all.txt')
             self.func.merge_to_index_all(file_toc, file_index, file_index_all)
+        elif sel == 13:
+            # --- 繁体简体 txt 文本文件互转 ---
+            p = input("请输入要转换的文本文件路径: ").strip('"')
+            if os.path.isfile(p) and self.func.text_file_check(p) == 2:
+                ts = input("将该文本转成繁体(T/t)还是简体(S/s):")
+                if ts in ('T', 't'):
+                    file_result = os.path.splitext(p)[0]+'_trad'+os.path.splitext(p)[1]
+                    self.func.simp_trad_trans(p, file_result, 'T')
+                elif ts in ('S', 's'):
+                    file_result = os.path.splitext(p)[0]+'_simp'+os.path.splitext(p)[1]
+                    self.func.simp_trad_trans(p, file_result, 'S')
+                else:
+                    print(Fore.RED + "ERROR: " + Fore.RESET + "输入有误")
+            else:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 20:
             # --- 生成词典 ---
             p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"\\').rstrip('/')
@@ -531,6 +546,7 @@ def print_menu():
     print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)" + Fore.RESET)
     print(Fore.CYAN + "  11" + Fore.RESET + ".从 toc_all.txt 生成 index_all.txt")
     print(Fore.CYAN + "  12" + Fore.RESET + ".合并 toc.txt 和 index.txt 为 index_all.txt")
+    print(Fore.CYAN + "  13" + Fore.RESET + ".繁体简体 txt 文本文件互转")
     print("\n(二) 制作词典")
     print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典" + Fore.YELLOW + " (需准备好原材料)" + Fore.RESET)
     print("\n(三) 还原词典")
