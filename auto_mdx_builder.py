@@ -65,16 +65,14 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
         elif sel == 3:
             # --- 将资料包文件夹打包成 mdd 文件 ---
-            dir_data = input("请输入要打包的资料文件夹路径: ").strip('"\\').rstrip('/')
-            dir_data = dir_data.rstrip('\\')
-            dir_data = dir_data.rstrip('/')
+            dir_data = input("请输入要打包的资料文件夹路径: ").strip('"').rstrip('\\/')
             print('\n------------------\n开始打包……\n')
             done_flg = self.utils.pack_to_mdd(dir_data, None)
             if done_flg:
                 print(Fore.GREEN + "\n打包完毕。" + Fore.RESET)
         elif sel == 10:
             # --- 从 PDF文件/pdg文件夹 生成预备原材料 ---
-            p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"\\').rstrip('/')
+            p = input("请输入 pdf文件/pdg文件夹 路径: ").strip('"').rstrip('\\/')
             if os.path.isfile(p) and os.path.splitext(p)[1] == '.pdf':
                 self.pdf_to_amb(p)
             elif os.path.isdir(p):
@@ -112,7 +110,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 20:
             # --- 生成词典 ---
-            p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"\\').rstrip('/')
+            p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"').rstrip('\\/')
             if os.path.split(p)[1] == 'build.toml':
                 if self.settings.load_build_toml(p, False, False):
                     self._build_mdict()
@@ -127,7 +125,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 30:
             # --- 从词典还原原材料 ---
-            p = input("请输入词典的文件夹或 mdx/mdd 文件路径: ").strip('"\\').rstrip('/')
+            p = input("请输入词典的文件夹或 mdx/mdd 文件路径: ").strip('"').rstrip('\\/')
             if os.path.isfile(p) and os.path.splitext(p)[1] == '.mdx':
                 self._restore_raw(p, False)
             elif os.path.isfile(p) and os.path.splitext(p)[1] == '.mdd':
@@ -144,7 +142,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
         elif sel == 31:
             # --- 从原材料还原 PDF ---
-            p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"\\').rstrip('/')
+            p = input("请输入原材料文件夹路径或 build.toml 文件路径: ").strip('"').rstrip('\\/')
             if os.path.split(p)[1] == 'build.toml':
                 if self.settings.load_build_toml(p, True):
                     self.amb_to_pdf(file_toml, False)
@@ -167,7 +165,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码" + Fore.RESET)
         elif sel == 41:
             # --- 从 PDF 提取图片 (PDF补丁丁) ---
-            p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
+            p = input("请输入 PDF 文件路径: ").strip('"').rstrip('\\/')
             if os.path.isfile(p) and p.lower().endswith('.pdf'):
                 fname = os.path.split(p)[1]
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
@@ -176,7 +174,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 42:
             # --- 从 PDF 提取图片 (MuPDF) ---
-            p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
+            p = input("请输入 PDF 文件路径: ").strip('"').rstrip('\\/')
             if os.path.isfile(p) and p.lower().endswith('.pdf'):
                 fname = os.path.split(p)[1]
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
@@ -185,7 +183,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 43:
             # --- 将 PDF 转换成图片 (MuPDF) ---
-            p = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
+            p = input("请输入 PDF 文件路径: ").strip('"').rstrip('\\/')
             if os.path.isfile(p) and p.lower().endswith('.pdf'):
                 fname = os.path.split(p)[1]
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
@@ -198,7 +196,7 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 44:
             # --- 将 图片 合成 PDF (MuPDF) ---
-            p = input("请输入图片所在文件夹路径(不能包含空格): ").strip('"\\').rstrip('/')
+            p = input("请输入图片所在文件夹路径(不能包含空格): ").strip('"').rstrip('\\/')
             if os.path.isdir(p):
                 out_file = p+'.pdf'
                 self.utils.combine_img_to_pdf(p, out_file)
@@ -206,8 +204,8 @@ class AutoMdxBuilder:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 45:
             # --- PDF 书签导出/导入（FreePic2Pdf） ---
-            file_pdf = input("请输入 PDF 文件路径: ").strip('"\\').rstrip('/')
-            dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"\\').rstrip('/')
+            file_pdf = input("请输入 PDF 文件路径: ").strip('"').rstrip('\\/')
+            dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"').rstrip('\\/')
             if os.path.isdir(dir_bkmk):
                 self.utils.eximport_bkmk_fp2p(file_pdf, dir_bkmk, False)
             elif dir_bkmk is None or len(dir_bkmk) == 0:

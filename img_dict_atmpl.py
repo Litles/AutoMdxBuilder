@@ -52,7 +52,7 @@ class ImgDictAtmpl:
             headwords = self._make_redirects_headword(check_result[0], file_3, n_len, check_result[1])
             # (4) 生成同义词重定向
             if check_result[3]:
-                headwords.append(self.func.make_redirects_syn(check_result[3], file_4))
+                headwords += self.func.make_redirects_syn(check_result[3], file_4)
             # (5) 生成繁简通搜重定向
             if self.settings.simp_trad_flg:
                 self.func.make_redirects_st(headwords, file_5)

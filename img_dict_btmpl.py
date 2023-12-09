@@ -44,7 +44,7 @@ class ImgDictBtmpl:
             headwords = self._make_entries_with_navi(imgs, check_result[0], file_1)
             # (2) 生成同义词重定向
             if check_result[2]:
-                headwords.append(self.func.make_redirects_syn(check_result[2], file_2))
+                headwords += self.func.make_redirects_syn(check_result[2], file_2)
             # (3) 生成繁简通搜重定向
             if self.settings.simp_trad_flg:
                 self.func.make_redirects_st(headwords, file_3)
