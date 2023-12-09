@@ -79,6 +79,9 @@ class Settings:
                 if self.templ_choice == 'A':
                     self.body_start = build["template"]["a"]["body_start"]  # 正文起始页为第几张图(>=1)
                     self.navi_items = build["template"]["a"].get("navi_items", [])
+                    for item in self.navi_items:
+                        if item["ref"] == "":
+                            item["ref"] = item["a"]
                     self.split_column = build["template"]["a"].get("auto_split_column", 1)
                     self.max_body = build["template"]["a"].get("max_body", 99999)
                 elif self.templ_choice == 'B':
