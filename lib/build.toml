@@ -40,9 +40,10 @@ max_body = 99999  # （可选）最大正文词条索引 (用于自适应分栏�
 # 文本词典 (模板C)
 #   必需材料: index.txt
 #   可选材料: syns.txt,  info.html
-
+add_headwords = true
 
 [template.d]
 # 文本词典 (模板D)
 #   必需材料: index_all.txt
 #   可选材料: syns.txt,  info.html
+add_headwords = true

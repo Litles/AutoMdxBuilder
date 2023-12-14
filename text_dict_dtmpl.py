@@ -144,7 +144,10 @@ class TextDictDtmpl:
                     elif dct["level"] != -1 and dct["body"] != '':
                         part_headword = ''
                         part_body = f'<div class="entry-body">{dct["body"]}</div>\n'
-                    elif re.match(r'<(p|div|html|body|title|head)>', dct["body"], flags=re.I):
+                    elif not self.settings.add_headwords:
+                        part_headword = ''
+                        part_body = f'<div class="entry-body">{dct["body"]}</div>\n'
+                    elif re.match(r'<(p|div|html|body|title|head)', dct["body"], flags=re.I):
                         part_headword = f'<div class="entry-headword">{dct["title"]}</div>\n'
                         part_body = f'<div class="entry-body">{dct["body"]}</div>\n'
                     else:

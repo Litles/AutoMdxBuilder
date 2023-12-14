@@ -62,6 +62,7 @@ class Settings:
         # 预设值
         self.split_column = 1
         self.max_body = 99999
+        self.add_headwords = True
 
     def load_build_toml(self, file_toml, pdf_flg=False, outside_flg=True):
         build_flg = False
@@ -88,6 +89,10 @@ class Settings:
                     self.body_start = build["template"]["b"]["body_start"]  # 正文起始页为第几张图(>=1)
                     self.split_column = build["template"]["b"].get("auto_split_column", 1)
                     self.max_body = build["template"]["b"].get("max_body", 99999)
+                elif self.templ_choice == 'C':
+                    self.add_headwords = build["template"]["c"].get("add_headwords", True)
+                elif self.templ_choice == 'D':
+                    self.add_headwords = build["template"]["d"].get("add_headwords", True)
                 # 设定其他变量
                 self.fname_final_txt = f"{self.name}.txt"
                 self.fname_css = f"{self.name_abbr.lower()}.css"

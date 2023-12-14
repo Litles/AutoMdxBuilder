@@ -103,8 +103,11 @@ class TextDictCtmpl:
                         mth = pat.match(line)
                         part_title = f'{mth.group(1)}\n'
                         part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
-                        part_headword = f'<div class="entry-headword">{mth.group(1)}</div>\n'
-                        if re.match(r'<(p|div|html|body|title|head)>', mth.group(2), flags=re.I):
+                        if not self.settings.add_headwords:
+                            part_headword = ''
+                        else:
+                            part_headword = f'<div class="entry-headword">{mth.group(1)}</div>\n'
+                        if re.match(r'<(p|div|html|body|title|head)', mth.group(2), flags=re.I):
                             part_body = f'<div class="entry-body">{mth.group(2)}</div>\n'
                         else:
                             part_body = f'<div class="entry-body"><p>{mth.group(2)}</p></div>\n'

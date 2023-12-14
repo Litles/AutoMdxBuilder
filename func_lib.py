@@ -524,7 +524,7 @@ class FuncLib():
         img_files = []
         for fname in os.listdir(dir_imgs_in):
             fpath = os.path.join(dir_imgs_in, fname)
-            if os.path.isfile(fpath):
+            if os.path.isfile(fpath) and fpath.endswith(tuple(self.settings.img_exts)):
                 img_files.append(fpath)
             if not re.match(r'\d+', fname.split('.')[0]):
                 num_flg = False
