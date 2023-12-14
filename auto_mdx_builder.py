@@ -55,10 +55,11 @@ class AutoMdxBuilder:
                     elif fname.endswith('.html') and fname.startswith(os.path.splitext(fname_txt)[0]):
                         file_info_raw = os.path.join(dir_curr, fname)
                         break
-                file_dict_info = self.func.generate_info_html(os.path.splitext(fname_txt)[0], file_info_raw, None)
+                file_dict_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
+                self.func.generate_info_html(file_info_raw, file_dict_info, os.path.splitext(fname_txt)[0], None)
                 # 打包
                 print('\n------------------\n开始打包……\n')
-                done_flg = self.utils.pack_to_mdict(file_final_txt, file_dict_info, dir_data, dir_curr)
+                done_flg = self.utils.pack_to_mdict(dir_curr, file_final_txt, file_dict_info, dir_data)
                 if done_flg:
                     print(Fore.GREEN + "\n打包完毕。" + Fore.RESET)
             else:
