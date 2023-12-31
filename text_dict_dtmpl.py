@@ -7,6 +7,7 @@
 
 import os
 import re
+import shutil
 from tomlkit import dumps
 from colorama import Fore
 
@@ -19,31 +20,31 @@ class TextDictDtmpl:
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
-        # 初始化, 检查原材料
+        # 清空临时目录下所有文件
+        for fname in os.listdir(self.settings.dir_output_tmp):
+            fpath = os.path.join(self.settings.dir_output_tmp, fname)
+            if os.path.isfile(fpath):
+                os.remove(fpath)
+        # 初始化, 检查原材料: index_all, syns, info, data
         check_result = self._check_raw_files()
         # 开始制作
         if check_result:
             print('\n材料检查通过, 开始制作词典……\n')
-            # 清空临时目录下所有文件
-            for fname in os.listdir(self.settings.dir_output_tmp):
-                fpath = os.path.join(self.settings.dir_output_tmp, fname)
-                if os.path.isfile(fpath):
-                    os.remove(fpath)
             # 预定义输出文件名
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
             file_dict_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
             # 1.分步生成各部分源文本
             file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_text_with_navi)  # 文本(有导航栏)词条
-            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)  # 同义词重定向
-            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_st)  # 繁简重定向
+            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_syn)  # 同义词重定向
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
             # (1) 生成文本(主)词条, 带层级导航
             headwords = self._make_entries_text_with_navi(check_result[0], file_1)
             # (2) 生成近义词重定向
             if check_result[1]:
-                headwords += self.func.make_redirects_syn(check_result[1], file_2)
+                headwords += self.func.make_relinks_syn(check_result[1], file_2)
             # (3) 生成繁简通搜重定向
             if self.settings.simp_trad_flg:
-                self.func.make_redirects_st(headwords, file_3)
+                self.func.make_relinks_st(headwords, file_3)
             # 2.合并成最终 txt 源文本
             entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
             print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
@@ -76,9 +77,8 @@ class TextDictDtmpl:
                 dcts.append(dct)
             # 2.提取 syns
             syns_flg = False
-            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M)
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in pat_syn.findall(text):
+                for t in self.settings.pat_relink.findall(text):
                     fw.write(f'{t[0]}\t{t[1]}\n')
                     syns_flg = True
             if not syns_flg:
@@ -110,9 +110,9 @@ class TextDictDtmpl:
         headwords = []
         """ (一) 生成文本(主)词条, 带层级导航 """
         # 1.读取全索引文件
-        proc_flg, dcts = self.func.read_index_all(False, file_index_all)
+        dcts = self.func.read_index_all(file_index_all, False)
         # 2.生成主体词条
-        if proc_flg:
+        if dcts:
             with open(file_out, 'w', encoding='utf-8') as fw:
                 tops = []
                 i = 0
@@ -184,6 +184,96 @@ class TextDictDtmpl:
         print("文本词条(有导航栏)已生成")
         return headwords
 
+    def _check_index_alls(self, dir_input, dir_out):
+        """ 检查 index_all 文本 """
+        pass_flg = True
+        file_index_all = os.path.join(dir_input, self.settings.fname_index_all)
+        # 1.扫描识别总 index_all 文件
+        final_index_all = os.path.join(dir_out, self.settings.fname_index_all)
+        index_check_num = self.func.text_file_check(file_index_all)
+        if index_check_num == 2:
+            shutil.copy(file_index_all, final_index_all)
+            # 读取检查总 index_all 文件
+            with open(final_index_all, 'r', encoding='utf-8') as fr:
+                i = 0
+                for line in fr:
+                    i += 1
+                    mth_stem = self.settings.pat_stem_text.match(line)
+                    if mth_stem:
+                        # 章节
+                        pass
+                    elif self.settings.pat_tab.match(line):
+                        # 词条
+                        pass
+                    else:
+                        print(Fore.RED + "ERROR: " + Fore.RESET + f"index_all.txt 第 {i} 行未匹配, 请检查")
+                        pass_flg = False
+                        break
+        elif index_check_num == 1:
+            pass_flg = False
+        elif self.settings.multi_volume:
+            # 2.扫描识别分 index_all
+            lst_file_index_all = []
+            pat1 = re.compile(r'index_all_(\d+)', flags=re.I)
+            lst_n = []
+            for fname in os.listdir(dir_input):
+                if fname.endswith('.txt') and pat1.match(fname):
+                    vol_n = int(pat1.match(fname).group(1))
+                    fp = os.path.join(dir_input, fname)
+                    if vol_n not in lst_n:
+                        index_check_num = self.func.text_file_check(fp)
+                        if index_check_num == 1:
+                            pass_flg = False
+                            break
+                        elif index_check_num == 2:
+                            lst_file_index_all.append({"vol_n": vol_n, "path": fp})
+                            lst_n.append(vol_n)
+            if pass_flg and not lst_file_index_all:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "未读取到 index_all 文件")
+                pass_flg = False
+            elif pass_flg and self.settings.vol_names and len(lst_file_index_all) != len(self.settings.vol_names):
+                print(Fore.RED + "ERROR: " + Fore.RESET + "index_all 文件数目与 build.toml 中 vol_names 不匹配")
+                pass_flg = False
+            elif pass_flg:
+                # 3.合并各 index_all 文本, 顺便检查格式
+                lst_file_index_all.sort(key=lambda dct: dct["vol_n"], reverse=False)
+                with open(final_index_all, 'w', encoding='utf-8') as fw:
+                    break_flg = False
+                    for x in range(len(lst_file_index_all)):
+                        fname = os.path.split(lst_file_index_all[x]["path"])[1]
+                        with open(lst_file_index_all[x]["path"], 'r', encoding='utf-8') as fr:
+                            # 写入卷标
+                            if self.settings.vol_names:
+                                fw.write('【L0】'+self.settings.vol_names[x]+'\t\n')
+                            else:
+                                fw.write('【L0】第'+str(lst_file_index_all[x]["vol_n"]).zfill(2)+'卷\t\n')
+                            # 整合开始
+                            i = 0
+                            for line in fr:
+                                i += 1
+                                mth_stem = self.settings.pat_stem_text.match(line)
+                                if mth_stem:
+                                    # 章节
+                                    if mth_stem.group(3) == '':
+                                        fw.write(f'【L{str(int(mth_stem.group(1))+1)}】{mth_stem.group(2)}\t\n')
+                                    else:
+                                        fw.write(f'【L{str(int(mth_stem.group(1))+1)}】{mth_stem.group(2)}\t{mth_stem.group(3)}\n')
+                                elif self.settings.pat_tab.match(line):
+                                    # 词条
+                                    mth = self.settings.pat_tab.match(line)
+                                    fw.write(f'{mth.group(1)}\t{mth.group(2)}\n')
+                                else:
+                                    print(Fore.RED + "ERROR: " + Fore.RESET + f"{fname} 第 {i} 行未匹配, 请检查")
+                                    pass_flg = False
+                                    break_flg = True
+                                    break
+                        if break_flg:
+                            break
+        if pass_flg:
+            return final_index_all
+        else:
+            return None
+
     def _check_raw_files(self):
         """ 检查原材料
         * 必要文本存在(文本编码均要是 utf-8 无 bom)
@@ -191,12 +281,21 @@ class TextDictDtmpl:
         """
         check_result = []
         # 预定义输入文件路径
-        file_index_all = os.path.join(self.settings.dir_input, self.settings.fname_index_all)
-        file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
-        file_dict_info = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
-        dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
+        dir_input = self.settings.dir_input
+        file_index_all = os.path.join(dir_input, self.settings.fname_index_all)
+        file_syns = os.path.join(dir_input, self.settings.fname_syns)
+        file_dict_info = os.path.join(dir_input, self.settings.fname_dict_info)
+        dir_data = os.path.join(dir_input, self.settings.dname_data)
+        # 准备临时文件夹
+        dir_index_all = self.settings.dir_index_all
+        if os.path.exists(dir_index_all):
+            shutil.rmtree(dir_index_all)
+            os.makedirs(dir_index_all)
+        else:
+            os.makedirs(dir_index_all)
+        file_index_all = self._check_index_alls(dir_input, dir_index_all)
         # 1.检查索引文件: 必须存在且合格
-        if self.func.text_file_check(file_index_all) == 2:
+        if file_index_all:
             check_result.append(file_index_all)
             # 2.检查同义词文件: 若存在就要合格
             syns_check_num = self.func.text_file_check(file_syns)
@@ -213,6 +312,9 @@ class TextDictDtmpl:
             # 4.检查 data 文件夹
             if os.path.isdir(dir_data) and len(os.listdir(dir_data)) != 0:
                 check_result.append(dir_data)
+            elif os.path.isdir(dir_data):
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "data 文件夹为空, 已忽略将不打包")
+                check_result.append(None)
             else:
                 check_result.append(None)
         # 返回最终检查结果

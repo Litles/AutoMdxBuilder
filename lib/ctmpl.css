@@ -1,4 +1,5 @@
 /*预定义*/
+h1 {text-align:center; font-size: 150%;}
 ul {
     margin-right: 0px;
     margin-left: 32px;
@@ -13,6 +14,7 @@ p {
 a {text-decoration:none}
 
 /*----------词条------------*/
+div.readertdetaillink {display: none;}
 /*词目*/
 div.entry-headword {
     text-align: left;

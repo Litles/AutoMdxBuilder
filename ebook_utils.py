@@ -68,9 +68,9 @@ class EbookUtils:
                 with open(file_final_txt, 'r', encoding='utf-8') as fr:
                     text = ''
                     for line in fr:
-                        if re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line):
-                            eid = re.match(r'^<div class="entry-id" style="display:none;">(\d+)</div>', line).group(1)
-                        elif not re.match(r'^</>\s*$', line):
+                        if re.match(r'<div class="entry-id" style="display:none;">(\d+)</div>', line):
+                            eid = re.match(r'<div class="entry-id" style="display:none;">(\d+)</div>', line).group(1)
+                        elif not re.match(r'</>\s*$', line):
                             text += line
                         else:
                             text += line
@@ -125,9 +125,9 @@ class EbookUtils:
                     n = 0
                     link_flg = False
                     for line in fr:
-                        if re.match(r'^@@@LINK=', line, flags=re.I):
+                        if re.match(r'@@@LINK=', line, flags=re.I):
                             link_flg = True
-                        if (not link_flg) and re.match(r'^</>\s*$', line):
+                        if (not link_flg) and re.match(r'</>\s*$', line):
                             n += 1
                             fw.write(f'<div class="entry-id" style="display:none;">{str(n).zfill(8)}</div>\n')
                             link_flg = False

@@ -1,5 +1,5 @@
 /*预定义*/
-h1 {text-align:center;}
+h1 {text-align:center; font-size: 150%;}
 ul {
     margin-right: 0px;
     margin-left: 32px;
@@ -16,6 +16,7 @@ a {text-decoration:none}
 /*----------导航------------*/
 /*原索引 (不展示)*/
 div.index-all {display: none;}
+div.readertdetaillink {display: none;}
 /*导航框*/
 div.top-navi-level {
 	margin: 12px 0px 6px 0px;

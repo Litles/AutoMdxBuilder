@@ -159,11 +159,15 @@ class AutoMdxBuilder:
         elif sel == 32:
             # --- 从 index_all.txt 还原 toc_all.txt ---
             file_index_all = input("请输入 index_all.txt 的文件路径: ").strip('"')
-            file_toc_all = os.path.join(os.path.split(file_index_all)[0], 'toc_all.txt')
-            if self.func.index_to_toc(file_index_all, file_toc_all):
+            dir_input, fname = os.path.split(file_index_all)
+            if 'index_all' in fname:
+                file_toc_all = os.path.join(dir_input, fname.replace('index_all', 'toc_all'))
+            else:
+                file_toc_all = os.path.join(dir_input, 'toc_all.txt')
+            if self.func.index_all_to_toc(file_index_all, file_toc_all):
                 print(Fore.GREEN + "\n处理完成, 生成在同目录下" + Fore.RESET)
             else:
-                print(Fore.RED + "\n文件检查不通过, 请确保所有词目都有对应页码" + Fore.RESET)
+                print(Fore.RED + "\n文件检查不通过" + Fore.RESET)
         elif sel == 41:
             # --- 从 PDF 提取图片 (PDF补丁丁) ---
             p = input("请输入 PDF 文件路径: ").strip('"').rstrip('\\/')
@@ -189,7 +193,7 @@ class AutoMdxBuilder:
                 fname = os.path.split(p)[1]
                 out_dir = os.path.join(os.path.split(p)[0], fname.split('.')[0])
                 dpi = input("请输入要生成图片的 DPI（回车则默认300）: ")
-                if re.match(r'^\d+$', dpi):
+                if re.match(r'\d+$', dpi):
                     self.utils.convert_pdf_to_imgs(p, out_dir, int(dpi))
                 else:
                     self.utils.convert_pdf_to_imgs(p, out_dir)
@@ -204,7 +208,15 @@ class AutoMdxBuilder:
             else:
                 print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
         elif sel == 45:
-            # --- PDF 书签导出/导入（FreePic2Pdf） ---
+            # --- 将 图片 合成 PDF (FreePic2Pdf) ---
+            p = input("请输入图片所在文件夹路径(不能包含空格): ").strip('"').rstrip('\\/')
+            if os.path.isdir(p):
+                out_file = p+'.pdf'
+                self.utils.combine_img_to_pdf_fp2p(p, out_file)
+            else:
+                print(Fore.RED + "\n输入的路径有误" + Fore.RESET)
+        elif sel == 46:
+            # --- PDF 书签导出/导入 (FreePic2Pdf) ---
             file_pdf = input("请输入 PDF 文件路径: ").strip('"').rstrip('\\/')
             dir_bkmk = input("请输入书签文件夹路径（导出则直接回车）: ").strip('"').rstrip('\\/')
             if os.path.isdir(dir_bkmk):
@@ -232,7 +244,7 @@ class AutoMdxBuilder:
                 # 生成 css 文件
                 file_css_tmpl = os.path.join(self.settings.dir_lib, self.settings.css_atmpl)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
-                if self.settings.split_column == 2:
+                if self.settings.split_columns == 2:
                     with open(os.path.join(self.settings.dir_lib, self.settings.css_split_2), 'r', encoding='utf-8') as fr:
                         s = fr.read()
                     with open(file_css, 'w', encoding='utf-8') as fw:
@@ -255,7 +267,7 @@ class AutoMdxBuilder:
                 # 生成 css 文件
                 file_css_tmpl = os.path.join(self.settings.dir_lib, self.settings.css_btmpl)
                 file_css = os.path.join(self.settings.dir_output, self.settings.fname_css)
-                if self.settings.split_column == 2:
+                if self.settings.split_columns == 2:
                     with open(os.path.join(self.settings.dir_lib, self.settings.css_split_2), 'r', encoding='utf-8') as fr:
                         s = fr.read()
                     with open(file_css, 'w', encoding='utf-8') as fw:
@@ -344,7 +356,7 @@ class AutoMdxBuilder:
             if not os.path.exists(out_dir):
                 os.makedirs(out_dir)
             # 提取 info.html
-            if not re.match(r'^\s*$', text):
+            if not re.match(r'\s*$', text):
                 with open(os.path.join(out_dir, 'info.html'), 'w', encoding='utf-8') as fw:
                     fw.write(text)
             # 提取 index, index_all, syns 等信息
@@ -509,7 +521,7 @@ class AutoMdxBuilder:
                 break
             elif fname == 'index_all.txt':
                 toc_tmp = os.path.join(self.settings.dir_output_tmp, 'toc_all.txt')
-                if self.func.index_to_toc(os.path.join(dir_amb, fname), toc_tmp):
+                if self.func.index_all_to_toc(os.path.join(dir_amb, fname), toc_tmp):
                     with open(toc_tmp, 'r', encoding='utf-8') as fr:
                         text = fr.read()
                     with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-8') as fr:
@@ -557,7 +569,8 @@ def print_menu():
     print(Fore.CYAN + "  42" + Fore.RESET + ".从 PDF 提取图片 (MuPDF)")
     print(Fore.CYAN + "  43" + Fore.RESET + ".将 PDF 转换成图片 (MuPDF)")
     print(Fore.CYAN + "  44" + Fore.RESET + ".将 图片 合成PDF (MuPDF)")
-    print(Fore.CYAN + "  45" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
+    print(Fore.CYAN + "  45" + Fore.RESET + ".将 图片 合成PDF (FreePic2Pdf)")
+    print(Fore.CYAN + "  46" + Fore.RESET + ".PDF书签导出/导入 (FreePic2Pdf)")
 
 
 def main():
@@ -568,7 +581,7 @@ def main():
         print_menu()
         sel = input('\n请输入数字（回车或“0”退出程序）: ')
         # 执行选择
-        if re.match(r'^\d+$', sel) and int(sel) in range(1, 50):
+        if re.match(r'\d+$', sel) and int(sel) in range(1, 50):
             print('\n------------------')
             amb = AutoMdxBuilder()
             amb.auto_processing(int(sel))

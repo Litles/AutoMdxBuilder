@@ -9,11 +9,11 @@ simp_trad_flg = false  # 是否需要繁简通搜
 [template]
 [template.a]
 # 图像词典 (模板A)
-#   必需材料: imgs,  index.txt
-#   可选材料: toc.txt,  syns.txt,  info.html
+#   必需材料: imgs,  index/toc
+#   可选材料: syns,  info
 body_start = 62  # 正文起始页为第几张图(>=1)
-auto_split_column = 1  # （可选）自适应分栏数 (默认1表示不分栏)
-max_body = 99999  # （可选）最大正文词条索引 (用于自适应分栏范围的判断, 默认到最后一页)
+auto_split_columns = 1  # （可选）自适应分栏数 (默认1表示不分栏)
+body_end_page = 99999  # （可选）最大正文页码 (用于自适应分栏范围的判断, 默认到最后一页)
 
 # （可选）导航栏链接, 有目录 (toc.txt) 就可以设置
 #navi_items = [
@@ -29,21 +29,21 @@ max_body = 99999  # （可选）最大正文词条索引 (用于自适应分栏�
 
 [template.b]
 # 图像词典 (模板B)
-#   必需材料: imgs,  index_all.txt
-#   可选材料: syns.txt,  info.html
+#   必需材料: imgs,  index_all/toc_all
+#   可选材料: syns,  info
 body_start = 62  # 正文起始页为第几张图(>=1)
-auto_split_column = 1  # （可选）自适应分栏数 (默认1表示不分栏)
-max_body = 99999  # （可选）最大正文词条索引 (用于自适应分栏范围的判断, 默认到最后一页)
+auto_split_columns = 1  # （可选）自适应分栏数 (默认1表示不分栏)
+body_end_page = 99999  # （可选）最大正文词条索引 (用于自适应分栏范围的判断, 默认到最后一页)
 
 
 [template.c]
 # 文本词典 (模板C)
-#   必需材料: index.txt
-#   可选材料: syns.txt,  info.html
+#   必需材料: index
+#   可选材料: syns,  info
 add_headwords = true
 
 [template.d]
 # 文本词典 (模板D)
-#   必需材料: index_all.txt
-#   可选材料: syns.txt,  info.html
+#   必需材料: index_all
+#   可选材料: syns,  info
 add_headwords = true

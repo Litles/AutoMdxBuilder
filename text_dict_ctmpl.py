@@ -19,31 +19,31 @@ class TextDictCtmpl:
 
     def make_source_file(self):
         """ 制作预备 txt 源文本 """
-        # 初始化, 检查原材料
+        # 清空临时目录下所有文件
+        for fname in os.listdir(self.settings.dir_output_tmp):
+            fpath = os.path.join(self.settings.dir_output_tmp, fname)
+            if os.path.isfile(fpath):
+                os.remove(fpath)
+        # 初始化, 检查原材料: index, syns, info, data
         check_result = self._check_raw_files()
         # 开始制作
         if check_result:
             print('\n材料检查通过, 开始制作词典……\n')
-            # 清空临时目录下所有文件
-            for fname in os.listdir(self.settings.dir_output_tmp):
-                fpath = os.path.join(self.settings.dir_output_tmp, fname)
-                if os.path.isfile(fpath):
-                    os.remove(fpath)
             # 预定义输出文件名
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
             file_dict_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
             # 1.分步生成各部分源文本
             file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_text)  # 文本词条
-            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_syn)  # 同义词重定向
-            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_redirects_st)  # 繁简重定向
+            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_syn)  # 同义词重定向
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
             # (1) 生成文本(主)词条
             headwords = self._make_entries_text(check_result[0], file_1)
             # (2) 生成同义词重定向
             if check_result[1]:
-                headwords += self.func.make_redirects_syn(check_result[1], file_2)
+                headwords += self.func.make_relinks_syn(check_result[1], file_2)
             # (3) 生成繁简通搜重定向
             if self.settings.simp_trad_flg:
-                self.func.make_redirects_st(headwords, file_3)
+                self.func.make_relinks_st(headwords, file_3)
             # 2.合并成最终 txt 源文本
             entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
             print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
@@ -67,9 +67,8 @@ class TextDictCtmpl:
                     fw.write(f'{t[0]}\t{t[1]}\n')
             # 2.提取 syns
             syns_flg = False
-            pat_syn = re.compile(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', flags=re.M)
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in pat_syn.findall(text):
+                for t in self.settings.pat_relink.findall(text):
                     fw.write(f'{t[0]}\t{t[1]}\n')
                     syns_flg = True
             if not syns_flg:
@@ -94,13 +93,11 @@ class TextDictCtmpl:
         """ (一) 生成文本(主)词条 """
         with open(file_out, 'a', encoding='utf-8') as fa:
             with open(file_index, 'r', encoding='utf-8') as fr:
-                lines = fr.readlines()
-                pat = re.compile(r'^([^\t]+)\t([^\t\r\n]+)[\r\n]*$')
                 i = 0
-                for line in lines:
+                for line in fr:
                     i += 1
-                    if pat.match(line):
-                        mth = pat.match(line)
+                    if self.settings.pat_tab.match(line):
+                        mth = self.settings.pat_tab.match(line)
                         part_title = f'{mth.group(1)}\n'
                         part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
                         if not self.settings.add_headwords:
@@ -130,8 +127,24 @@ class TextDictCtmpl:
         file_syns = os.path.join(self.settings.dir_input, self.settings.fname_syns)
         file_dict_info = os.path.join(self.settings.dir_input, self.settings.fname_dict_info)
         dir_data = os.path.join(self.settings.dir_input, self.settings.dname_data)
-        # 1.检查索引文件: 必须存在且合格
-        if self.func.text_file_check(file_index) == 2:
+        # 1.扫描识别 index 文件
+        pass_flg = True
+        index_check_num = self.func.text_file_check(file_index)
+        if index_check_num == 2:
+            with open(file_index, 'r', encoding='utf-8') as fr:
+                i = 0
+                for line in fr:
+                    i += 1
+                    if not self.settings.pat_tab.match(line):
+                        print(Fore.RED + "ERROR: " + Fore.RESET + f"index.txt 第 {i} 行未匹配, 请检查")
+                        pass_flg = False
+                        break
+        elif index_check_num == 1:
+            pass_flg = False
+        else:
+            pass_flg = False
+            print(Fore.RED + "ERROR: " + Fore.RESET + "未读取到 index 文件")
+        if pass_flg:
             check_result.append(file_index)
             # 2.检查同义词文件: 若存在就要合格
             syns_check_num = self.func.text_file_check(file_syns)
@@ -148,6 +161,9 @@ class TextDictCtmpl:
             # 4.检查 data 文件夹
             if os.path.isdir(dir_data) and len(os.listdir(dir_data)) != 0:
                 check_result.append(dir_data)
+            elif os.path.isdir(dir_data):
+                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "data 文件夹为空, 已忽略将不打包")
+                check_result.append(None)
             else:
                 check_result.append(None)
         # 返回最终检查结果
