@@ -115,25 +115,29 @@ class TextDictDtmpl:
         if dcts:
             with open(file_out, 'w', encoding='utf-8') as fw:
                 tops = []
+                headwords_stem = []
                 i = 0
                 len_dcts = len(dcts)
                 for dct in dcts:
-                    # 词头部分
-                    part_title = f'{dct["title"]}\n'
                     part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
-                    # 保留索引
+                    # 词头, 索引备份
                     if dct["level"] == -1:
+                        part_title = f'{dct["title"]}\n'
                         part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}</div>\n'
                     else:
+                        part_title = f'{self.settings.name_abbr}_{dct["title"]}\n'
                         part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}</div>\n'
                     # top-navi-level 部分
                     part_top = '<div class="top-navi-level">'
                     part_top += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
                     for x in range(len(dct["navi_bar"])):
+                        cname = 'navi-item'
+                        link_name = f'{self.settings.name_abbr}_{dct["navi_bar"][x]}'
                         if x == len(dct["navi_bar"])-1 and dct["level"] == -1:
-                            part_top += f'<span class="sep-navi">»</span><span class="navi-item-entry"><a href="entry://{dct["navi_bar"][x]}">{dct["navi_bar"][x]}</a></span>'
-                        else:
-                            part_top += f'<span class="sep-navi">»</span><span class="navi-item"><a href="entry://{dct["navi_bar"][x]}">{dct["navi_bar"][x]}</a></span>'
+                            cname = 'navi-item-entry'
+                            link_name = dct["navi_bar"][x]
+                        aname = dct["navi_bar"][x]
+                        part_top += f'<span class="sep-navi">»</span><span class="{cname}"><a href="entry://{link_name}">{aname}</a></span>'
                     part_top += '</div>\n'
                     # item-list 部分
                     part_list = self.func.get_item_list(dct)
@@ -154,33 +158,55 @@ class TextDictDtmpl:
                         part_headword = f'<div class="entry-headword">{dct["title"]}</div>\n'
                         part_body = f'<div class="entry-body"><p>{dct["body"]}</p></div>\n'
                     # bottom-navi 部分
+                    part_left = ''
+                    part_right = ''
                     if i == 0:
-                        part_left = ''
-                        part_right = f'<span class="navi-item-right"><a href="entry://{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
+                        # 只有右
+                        if dcts[i+1]["level"] != -1:
+                            part_right = f'<span class="navi-item-right"><a href="entry://{self.settings.name_abbr}_{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
+                        else:
+                            part_right = f'<span class="navi-item-right"><a href="entry://{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
                     elif i == len_dcts-1:
-                        part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{dcts[i-1]["title"]}">{dcts[i-1]["title"]}</a></span>'
-                        part_right = ''
+                        # 只有左
+                        if dcts[i-1]["level"] != -1:
+                            part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{self.settings.name_abbr}_{dcts[i-1]["title"]}">{dcts[i-1]["title"]}</a></span>'
+                        else:
+                            part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{dcts[i-1]["title"]}">{dcts[i-1]["title"]}</a></span>'
                     else:
-                        part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{dcts[i-1]["title"]}">{dcts[i-1]["title"]}</a></span>'
-                        part_right = f'<span class="navi-item-right"><a href="entry://{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
+                        if dcts[i-1]["level"] != -1:
+                            part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{self.settings.name_abbr}_{dcts[i-1]["title"]}">{dcts[i-1]["title"]}</a></span>'
+                        else:
+                            part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{dcts[i-1]["title"]}">{dcts[i-1]["title"]}</a></span>'
+                        if dcts[i+1]["level"] != -1:
+                            part_right = f'<span class="navi-item-right"><a href="entry://{self.settings.name_abbr}_{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
+                        else:
+                            part_right = f'<span class="navi-item-right"><a href="entry://{dcts[i+1]["title"]}">{dcts[i+1]["title"]}</a>&#8197;☛</span>'
                     part_bottom = '<div class="bottom-navi">' + part_left + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + part_right + '</div>\n'
                     # 合并写入
                     fw.write(part_title+part_css+part_index+part_top+part_list+part_headword+part_body+part_bottom+'</>\n')
                     headwords.append(dct["title"])
                     # 收集顶级章节
-                    if dct["level"] == 0:
-                        tops.append(dct["title"])
+                    if dct["level"] != -1:
+                        if dct["level"] == 0:
+                            tops.append(dct["title"])
+                        elif dct["level"] == 1 and self.settings.multi_volume:
+                            pass
+                        else:
+                            headwords_stem.append(dct["title"])
                     i += 1
-                # 写入总目词条
+                # 3.写入总目词条
                 toc_entry = f'TOC_{self.settings.name_abbr}\n'
                 toc_entry += f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
                 toc_entry += f'<div class="top-navi-level"><span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span></div>\n'
                 toc_entry += '<div class="toc-list"><ul>'
                 for top in tops:
-                    toc_entry += f'<li><a href="entry://{top}">{top}</a></li>'
+                    toc_entry += f'<li><a href="entry://{self.settings.name_abbr}_{top}">{top}</a></li>'
                 toc_entry += '</ul><div class="bottom-navi">' + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + '</div>\n'
                 toc_entry += '</div>\n</>\n'
                 fw.write(toc_entry)
+                # 4.章节重定向
+                for word in headwords_stem:
+                    fw.write(f'{word}\n@@@LINK={self.settings.name_abbr}_{word}\n</>\n')
         print("文本词条(有导航栏)已生成")
         return headwords
 

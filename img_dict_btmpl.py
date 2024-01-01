@@ -44,6 +44,7 @@ class ImgDictBtmpl:
                 imgs, img_lens = self.func.prepare_imgs(check_result[1], dir_imgs_tmp, self.settings.volume_num)
             else:
                 imgs, img_lens = self.func.prepare_imgs(check_result[1], dir_imgs_tmp)
+                # self.book_dicts = []
             # 1.开始生成各部分源文本
             dcts = self.func.read_index_all(check_result[0])
             # (1) 生成主体词条, 带层级导航
@@ -126,26 +127,26 @@ class ImgDictBtmpl:
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
 
-    def _pre_navi_link(self, imgs, img_lens, dcts):
+    def _pre_navi_link(self, imgs, dcts, vpage_dcts):
         """ 匹配图片序号, 生成页面词条代表 """
+        # 0.准备各卷卷首图片序号
+        lst_vpi = [d["page_index"] for d in vpage_dcts]
         # 1.匹配图片序号
         for x in range(len(dcts)):
             vol_i = dcts[x]["vol_n"]-1
-            offset = sum(img_lens[i] for i in range(vol_i)) + self.settings.body_start[vol_i]
             if dcts[x]["body"] < 0:
-                dcts[x]["page_index"] = offset+dcts[x]["body"]-1
+                dcts[x]["page_index"] = lst_vpi[vol_i]+self.settings.body_start[vol_i]+dcts[x]["body"]-1
             elif dcts[x]["body"] > 0:
-                dcts[x]["page_index"] = offset+dcts[x]["body"]-2
+                dcts[x]["page_index"] = lst_vpi[vol_i]+self.settings.body_start[vol_i]+dcts[x]["body"]-2
             else:
                 # 如果为空向后检索页码来填充
                 for d in dcts[x+1:]:
                     vol_i = d["vol_n"]-1
-                    offset = sum(img_lens[i] for i in range(vol_i)) + self.settings.body_start[vol_i]
                     if d["body"] < 0:
-                        dcts[x]["page_index"] = offset+d["body"]-1
+                        dcts[x]["page_index"] = lst_vpi[vol_i]+self.settings.body_start[vol_i]+d["body"]-1
                         break
                     elif d["body"] > 0:
-                        dcts[x]["page_index"] = offset+d["body"]-2
+                        dcts[x]["page_index"] = lst_vpi[vol_i]+self.settings.body_start[vol_i]+d["body"]-2
                         break
         # 2.生成页面词条代表
         n = 1
@@ -156,9 +157,9 @@ class ImgDictBtmpl:
             if lst:
                 imgs[i]["dct"] = lst[-1]
                 n = 1
-            elif i == 0:
-                # 第一张图片
-                imgs[i]["dct"] = dcts[0]
+            elif i in lst_vpi:
+                # 取卷首图片
+                imgs[i]["dct"] = list(filter(lambda d: d["page_index"] == i, vpage_dcts))[0]
                 n = 1
             else:
                 # 同上条
@@ -169,49 +170,82 @@ class ImgDictBtmpl:
     def _make_entries_with_navi(self, imgs, img_lens, dcts, file_out):
         """ (二) 生成主体词条, 带层级导航 """
         headwords = []
+        # 0.生成每卷首页词条
+        vpage_dcts = []
+        for x in range(len(self.settings.body_start)):
+            vpage_dct = {
+                "id": None,
+                "level": -1,
+                "body": 1-self.settings.body_start[x],
+                "vol_n": x+1,
+                "page_index": sum(img_lens[i] for i in range(x))
+            }
+            if self.settings.multi_volume:
+                vpage_dct["title"] = f'{self.settings.name_abbr}[{str(x+1).zfill(2)}]'
+                vpage_dct["navi_bar"] = [f'{self.settings.name_abbr}[{str(x+1).zfill(2)}]']
+            else:
+                vpage_dct["title"] = f'{self.settings.name_abbr}'
+                vpage_dct["navi_bar"] = [f'{self.settings.name_abbr}']
+            vpage_dcts.append(vpage_dct)
         # 1.整理 dcts, imgs
-        self._pre_navi_link(imgs, img_lens, dcts)
+        self._pre_navi_link(imgs, dcts, vpage_dcts)
         # 2.开始制作
         with open(file_out, 'w', encoding='utf-8') as fw:
-            # 1.全索引词条部分
+            # 1.卷首词条
+            for dct in vpage_dcts:
+                fw.write(self._get_entry_with_navi(dct, imgs))
+            # 2.全索引章节和词条部分
             tops = []
+            headwords_stem = []
             for dct in dcts:
                 headwords.append(dct["title"])
                 entry = self._get_entry_with_navi(dct, imgs)
                 fw.write(entry)
                 # 收集顶级章节
-                if dct["level"] == 0:
-                    tops.append(dct["title"])
-            # 2.总目词条
+                if dct["level"] != -1:
+                    if dct["level"] == 0:
+                        tops.append(dct["title"])
+                    elif dct["level"] == 1 and self.settings.multi_volume:
+                        pass
+                    else:
+                        headwords_stem.append(dct["title"])
+            # 3.总目词条
             toc_entry = f'TOC_{self.settings.name_abbr}\n'
             toc_entry += f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
             toc_entry += f'<div class="top-navi-level"><span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span></div>\n'
             toc_entry += '<div class="toc-list"><ul>'
             for top in tops:
-                toc_entry += f'<li><a href="entry://{top}">{top}</a></li>'
+                toc_entry += f'<li><a href="entry://{self.settings.name_abbr}_{top}">{top}</a></li>'
             toc_entry += '</ul><div class="bottom-navi">' + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + '</div>\n'
             toc_entry += '</div>\n</>\n'
             fw.write(toc_entry)
-            # 3.补页面词条
+            # 4.补页面词条
             for x in range(len(imgs)):
-                entry = self._get_entry_with_navi(imgs[x]["dct"], imgs, x, imgs[x]["mark"])
+                entry = self._get_entry_with_navi(imgs[x]["dct"], imgs, x)
                 fw.write(entry)
+            # 5.章节重定向
+            for word in headwords_stem:
+                fw.write(f'{word}\n@@@LINK={self.settings.name_abbr}_{word}\n</>\n')
         print("图像词条(有导航栏)已生成")
         return headwords
 
-    def _get_entry_with_navi(self, dct, imgs, pi=None, mark=None):
+    def _get_entry_with_navi(self, dct, imgs, pi=None):
         # 1.词头部分
-        if mark:
+        if pi is not None:
             i = pi
             part_title = f'{imgs[i]["title"]}\n'
             part_index = ''
         else:
             i = dct["page_index"]  # 对应图片序号
-            part_title = f'{dct["title"]}\n'
-            # 索引备份
+            # 词头, 索引备份
             if dct["level"] == -1:
-                part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}|{dct["body"]}</div>\n'
+                part_title = f'{dct["title"]}\n'
+                if dct["id"]:
+                    part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}|{dct["body"]}</div>\n'
+                else:
+                    part_index = ''
             else:
+                part_title = f'{self.settings.name_abbr}_{dct["title"]}\n'
                 part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}|{dct["body"]}</div>\n'
         # 2.css 引用部分
         part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
@@ -219,12 +253,16 @@ class ImgDictBtmpl:
         part_top = '<div class="top-navi-level">'
         part_top += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
         for x in range(len(dct["navi_bar"])):
+            cname = 'navi-item'
+            link_name = f'{self.settings.name_abbr}_{dct["navi_bar"][x]}'
             if x == len(dct["navi_bar"])-1 and dct["level"] == -1:
-                part_top += f'<span class="sep-navi">»</span><span class="navi-item-entry"><a href="entry://{dct["navi_bar"][x]}">{dct["navi_bar"][x]}</a></span>'
-            else:
-                part_top += f'<span class="sep-navi">»</span><span class="navi-item"><a href="entry://{dct["navi_bar"][x]}">{dct["navi_bar"][x]}</a></span>'
-        if mark and mark != '[P1]':
-            part_top = re.sub(r'(">)(.*?)(</a></span>)$', r'\1\2'+mark+r'\3', part_top)
+                cname = 'navi-item-entry'
+                link_name = dct["navi_bar"][x]
+            aname = dct["navi_bar"][x]
+            part_top += f'<span class="sep-navi">»</span><span class="{cname}"><a href="entry://{link_name}">{aname}</a></span>'
+        if pi is not None and imgs[i]["mark"] != '[P1]':
+            # 图像页面的导航(补[P2]后缀)
+            part_top = re.sub(r'(">)(.*?)(</a></span>)$', r'\1\2'+imgs[i]["mark"]+r'\3', part_top)
         part_top += '</div>\n'
         # 4.item-list 部分
         part_list = self.func.get_item_list(dct)
@@ -245,21 +283,33 @@ class ImgDictBtmpl:
         # 6.bottom-navi 部分
         if i == 0:
             part_left = ''
-            # 无页面章节的下一页展示自己
-            if not mark and (dct["level"] != -1 and dct["body"] == 0):
-                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i]["title"]}">&#8197;&#12288;☛</a></span>'
+            # [非图片词条]无页面的章节目录的下一页展示自己
+            if pi is None and (dct["level"] != -1 and dct["body"] == 0):
+                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i]["title"]}">{imgs[i]["dct"]["title"]}</a>&#8197;☛</span>'
+            # 其他情况
+            elif imgs[i+1]["mark"] == '[P1]':
+                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">{imgs[i+1]["dct"]["title"]}</a>&#8197;☛</span>'
             else:
-                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
+                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">{imgs[i+1]["dct"]["title"]}{imgs[i+1]["mark"]}</a>&#8197;☛</span>'
         elif i == len(imgs)-1:
-            part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
+            if imgs[i-1]["mark"] == '[P1]':
+                part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{imgs[i-1]["title"]}">{imgs[i-1]["dct"]["title"]}</a></span>'
+            else:
+                part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{imgs[i-1]["title"]}">{imgs[i-1]["dct"]["title"]}{imgs[i-1]["mark"]}</a></span>'
             part_right = ''
         else:
-            part_left = f'<span class="navi-item-left"><a href="entry://{imgs[i-1]["title"]}">☚&#12288;&#8197;</a></span>'
-            # 无页面章节的下一页展示自己
-            if not mark and (dct["level"] != -1 and dct["body"] == 0):
-                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i]["title"]}">&#8197;&#12288;☛</a></span>'
+            if imgs[i-1]["mark"] == '[P1]':
+                part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{imgs[i-1]["title"]}">{imgs[i-1]["dct"]["title"]}</a></span>'
             else:
-                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">&#8197;&#12288;☛</a></span>'
+                part_left = f'<span class="navi-item-left">☚&#8197;<a href="entry://{imgs[i-1]["title"]}">{imgs[i-1]["dct"]["title"]}{imgs[i-1]["mark"]}</a></span>'
+            # [非图片词条]无页面的章节目录的下一页展示自己
+            if pi is None and (dct["level"] != -1 and dct["body"] == 0):
+                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i]["title"]}">{imgs[i]["dct"]["title"]}</a>&#8197;☛</span>'
+            # 其他情况
+            elif imgs[i+1]["mark"] == '[P1]':
+                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">{imgs[i+1]["dct"]["title"]}</a>&#8197;☛</span>'
+            else:
+                part_right = f'<span class="navi-item-right"><a href="entry://{imgs[i+1]["title"]}">{imgs[i+1]["dct"]["title"]}{imgs[i+1]["mark"]}</a>&#8197;☛</span>'
         part_bottom = '<div class="bottom-navi">' + part_left + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + part_right + '</div>\n'
         # 合并
         entry = part_title+part_css+part_index+part_top+part_list+part_img+part_bottom+'</>\n'

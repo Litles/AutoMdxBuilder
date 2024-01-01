@@ -635,7 +635,7 @@ class FuncLib():
         elif len(dct["children"]) != 0:
             html += '<div class="toc-list"><ul>'
             for item in dct["children"]:
-                html += f'<li><a href="entry://{item}">{item}</a></li>'
+                html += f'<li><a href="entry://{self.settings.name_abbr}_{item}">{item}</a></li>'
             html += '</ul></div>\n'
         else:
             pass
@@ -661,14 +661,6 @@ class FuncLib():
                 img_lens.append(len(imgs_tmp))
                 print(f"第 {i+1} 卷已完成")
                 lst_dir_imgs.append(dir_tmp)
-                # self.book_dicts = []
-                # tmp_dct = {
-                #     "level": -1,
-                #     "title": f'VOLUME{str(i+1).zfill(2)}',
-                #     "body": 1-self.settings.body_start,
-                #     "vol_n": i+1,
-                #     "navi_bar": [f'VOLUME{str(i+1).zfill(2)}']
-                # }
             for fp in dir_imgs_in["others"]:
                 dir_tmp = os.path.join(dir_imgs_out, os.path.split(fp)[1])
                 if os.path.exists(dir_tmp):
