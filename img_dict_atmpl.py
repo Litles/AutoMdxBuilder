@@ -190,7 +190,7 @@ class ImgDictAtmpl:
                 entry_txt += '<div class="toc-title">目录</div>\n<div class="toc-text">\n<ul>\n'
         else:
             # 分目录
-            entry_txt += f'TOC_{self.settings.name_abbr}_VOL{str(vol_i+1).zfill(2)}\n<link rel="stylesheet" type="text/css" href="/{self.settings.name_abbr.lower()}.css"/>\n'
+            entry_txt += f'TOC_{self.settings.name_abbr}[{str(vol_i+1).zfill(2)}]\n<link rel="stylesheet" type="text/css" href="/{self.settings.name_abbr.lower()}.css"/>\n'
             if self.settings.vol_names:
                 entry_txt += f'<div class="toc-title">分目录（{self.settings.vol_names[vol_i]}）</div>\n<div class="toc-text">\n<ul>\n'
             else:
@@ -250,9 +250,9 @@ class ImgDictAtmpl:
                         pairs = self.func.read_toc_file(file_toc[i], i)
                         toc_txts.append(self._get_toc_entry_txt(pairs, False, i))
                         if self.settings.vol_names:
-                            top_toc_txt += f'\t<li><a href="entry://TOC_{self.settings.name_abbr}_VOL{str(i+1).zfill(2)}">{self.settings.vol_names[i]}</a></li>\n'
+                            top_toc_txt += f'\t<li><a href="entry://TOC_{self.settings.name_abbr}[{str(i+1).zfill(2)}]">{self.settings.vol_names[i]}</a></li>\n'
                         else:
-                            top_toc_txt += f'\t<li><a href="entry://TOC_{self.settings.name_abbr}_VOL{str(i+1).zfill(2)}">第 {str(i+1).zfill(2)} 卷</a></li>\n'
+                            top_toc_txt += f'\t<li><a href="entry://TOC_{self.settings.name_abbr}[{str(i+1).zfill(2)}]">第 {str(i+1).zfill(2)} 卷</a></li>\n'
                 top_toc_txt += '</ul>\n</div>\n</>\n'
                 # 写入词条
                 if toc_txts:
