@@ -34,11 +34,11 @@ class TextDictDtmpl:
             file_final_txt = os.path.join(self.settings.dir_output_tmp, self.settings.fname_final_txt)
             file_dict_info = os.path.join(self.settings.dir_output_tmp, self.settings.fname_dict_info)
             # 1.分步生成各部分源文本
-            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_text_with_navi)  # 文本(有导航栏)词条
+            file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_with_navi_text)  # 文本(有导航栏)词条
             file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_syn)  # 同义词重定向
             file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
             # (1) 生成文本(主)词条, 带层级导航
-            headwords = self._make_entries_text_with_navi(check_result[0], file_1)
+            headwords = self._make_entries_with_navi(check_result[0], file_1)
             # (2) 生成近义词重定向
             if check_result[1]:
                 headwords += self.func.make_relinks_syn(check_result[1], file_2)
@@ -49,21 +49,25 @@ class TextDictDtmpl:
             entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
             print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
             # 3.生成 info.html
-            self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D')
+            if self.settings.multi_volume:
+                self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D', self.settings.volume_num)
+            else:
+                self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D')
             # 返回制作结果
             return [file_final_txt, check_result[3], file_dict_info]
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
 
-    def extract_final_txt(self, file_final_txt, out_dir, dict_name):
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name, multi_vols_flg=False, volume_num=1):
         """ 从模板D词典的源 txt 文本中提取 index, syns 信息 """
         dcts = []
-        # 提取资料
+        syns = []
+        # (一) 分析提取源 txt 文本
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.+?)</div>.+?(<div class="(entry-body|toc-list)">[^\r\n]+</div>)$', flags=re.M+re.S)
+            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.+?)\|\d+</div>.+?(<div class="(entry-body|toc-list)">[^\r\n]+</div>)$', flags=re.M+re.S)
             for t in pat_index.findall(text):
                 if t[2].startswith('<div class="entry-body">'):
                     body = re.search(r'<div class="entry-body">(.+?)</div>$', t[2], flags=re.M).group(1)
@@ -75,22 +79,19 @@ class TextDictDtmpl:
                     "body": body
                 }
                 dcts.append(dct)
-            # 2.提取 syns
-            syns_flg = False
-            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in self.settings.pat_relink.findall(text):
-                    fw.write(f'{t[0]}\t{t[1]}\n')
-                    syns_flg = True
-            if not syns_flg:
-                os.remove(os.path.join(out_dir, 'syns.txt'))
-            # 3.识别 name_abbr
+            # 2.识别 name_abbr
             mth = re.search(r'^<link rel="stylesheet" type="text/css" href="([^>/\"\.]+?)\.css"/>$', text, flags=re.M)
             if mth:
                 name_abbr = mth.group(1).upper()
             else:
                 print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
-        # 整理 index, 输出 index_all.txt
+            # 3.提取 syns
+            for t in self.settings.pat_relink.findall(text):
+                if not t[1].startswith(name_abbr):
+                    syns.append((t[0], t[1]))
+        # (二) 整理输出提取结果
+        # 1.index_all.txt
         dcts.sort(key=lambda dct: dct["id"], reverse=False)
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
             for dct in dcts:
@@ -98,19 +99,27 @@ class TextDictDtmpl:
                     fw.write(f'{dct["name"]}\t\n')
                 else:
                     fw.write(f'{dct["name"]}\t{dct["body"]}\n')
-        # 输出 build.toml 文件
+        # 2.syns.txt
+        if syns:
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for s in syns:
+                    fw.write(f'{s[0]}\t{s[1]}\n')
+        # 3. build.toml 文件
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
         self.settings.build["global"]["templ_choice"] = "D"
         self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
+        # 判断 add_headwords
+        if not re.search(r'^<div class="entry-headword">[^<]+</div>$', text, flags=re.M):
+            self.settings.build["template"]["d"]["add_headwords"] = False
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
 
-    def _make_entries_text_with_navi(self, file_index_all, file_out):
+    def _make_entries_with_navi(self, file_index_all, file_out):
         headwords = []
         """ (一) 生成文本(主)词条, 带层级导航 """
         # 1.读取全索引文件
-        dcts = self.func.read_index_all(file_index_all, False)
+        dcts = self.func.read_index_all_file(file_index_all, False)
         # 2.生成主体词条
         if dcts:
             with open(file_out, 'w', encoding='utf-8') as fw:
@@ -123,10 +132,10 @@ class TextDictDtmpl:
                     # 词头, 索引备份
                     if dct["level"] == -1:
                         part_title = f'{dct["title"]}\n'
-                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}</div>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}|{str(dct["vol_n"])}</div>\n'
                     else:
                         part_title = f'{self.settings.name_abbr}_{dct["title"]}\n'
-                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}</div>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}|{str(dct["vol_n"])}</div>\n'
                     # top-navi-level 部分
                     part_top = '<div class="top-navi-level">'
                     part_top += f'<span class="navi-item"><a href="entry://TOC_{self.settings.name_abbr}">🕮</a></span>'
@@ -261,6 +270,7 @@ class TextDictDtmpl:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "index_all 文件数目与 build.toml 中 vol_names 不匹配")
                 pass_flg = False
             elif pass_flg:
+                self.settings.volume_num = len(lst_file_index_all)
                 # 3.合并各 index_all 文本, 顺便检查格式
                 lst_file_index_all.sort(key=lambda dct: dct["vol_n"], reverse=False)
                 with open(final_index_all, 'w', encoding='utf-8') as fw:

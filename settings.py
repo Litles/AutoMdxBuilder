@@ -45,9 +45,9 @@ class Settings:
         self.dir_index_all = os.path.join(self.dir_output_tmp, 'index_all')
         self.fname_entries_text = 'entries_text.txt'
         self.fname_entries_img = 'entries_img.txt'
-        self.fname_entry_toc = 'entry_toc.txt'
+        self.fname_entries_toc = 'entries_toc.txt'
         self.fname_entries_with_navi = 'entries_with_navi.txt'
-        self.fname_entries_text_with_navi = 'entries_text_with_navi.txt'
+        self.fname_entries_with_navi_text = 'entries_with_navi_text.txt'
         self.fname_relinks_syn = 'relinks_syn.txt'
         self.fname_relinks_st = 'relinks_st.txt'
         self.fname_relinks_headword = 'relinks_headword.txt'
@@ -79,6 +79,7 @@ class Settings:
         self.css_split_2 = 'auto_split_2.css'
 
         # 预设值
+        self.body_start = [1]
         self.split_columns = 1
         self.body_end_page = [99999]
         self.add_headwords = True
@@ -97,9 +98,11 @@ class Settings:
                 # --- 通用设置 ---
                 self.name = build["global"]["name"]  # 书名
                 self.name_abbr = build["global"]["name_abbr"].upper()  # 书名首字母缩写
-                self.simp_trad_flg = build["global"]["simp_trad_flg"]  # 是否要繁简通搜
+                self.simp_trad_flg = build["global"].get("simp_trad_flg", False)  # 是否要繁简通搜
                 # --- 区别设置 ---
                 self.templ_choice = build["global"]["templ_choice"].upper()  # 模板选择
+                self.multi_volume = build["global"].get("multi_volume", False)
+                self.vol_names = build["global"].get("vol_names", [])
                 # 模板 A, B
                 if self.templ_choice in ('A', 'B'):
                     # --- 1.独有部分 ----
@@ -115,9 +118,7 @@ class Settings:
                     self.body_start = build["template"][label]["body_start"]  # 正文起始页为第几张图(>=1)
                     if isinstance(self.body_start, int):
                         self.body_start = [self.body_start]
-                    # 是否分卷, 卷数, 卷名(可选)
-                    self.multi_volume = build["template"][label].get("multi_volume", False)
-                    self.vol_names = build["template"][label].get("vol_names", [])
+                    # 卷数, 卷名(可选)
                     if self.multi_volume and len(self.vol_names) not in (0, len(self.body_start)):
                         build_flg = False
                         print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 body_start 和 vol_names 数目不匹配")
@@ -125,23 +126,35 @@ class Settings:
                         self.volume_num = len(self.body_start)
                     # 分栏 (可选)
                     self.split_columns = build["template"][label].get("auto_split_columns", 1)
+                    get_body_end_page = build["template"][label].get("body_end_page", self.body_end_page[0])
                     if self.multi_volume:
-                        self.body_end_page = build["template"][label].get("body_end_page", [self.body_end_page for i in range(self.volume_num)])
-                        if isinstance(self.body_end_page, int):
-                            self.body_end_page = [self.body_end_page for i in range(self.volume_num)]
+                        self.body_end_page = [self.body_end_page[0] for i in range(self.volume_num)]
+                        if isinstance(get_body_end_page, int):
+                            self.body_end_page = [get_body_end_page for i in range(self.volume_num)]
+                        elif isinstance(get_body_end_page, list):
+                            if len(get_body_end_page) > self.volume_num:
+                                build_flg = False
+                                print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 body_end_page 数目超过了分卷数")
+                            else:
+                                for i in range(len(get_body_end_page)):
+                                    self.body_end_page[i] = get_body_end_page[i]
+                        else:
+                            build_flg = False
+                            print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 body_end_page 格式有误")
                     else:
-                        self.body_end_page = build["template"][label].get("body_end_page", self.body_end_page)
-                        if isinstance(self.body_end_page, int):
-                            self.body_end_page = [self.body_end_page]
+                        if isinstance(get_body_end_page, int):
+                            self.body_end_page[0] = get_body_end_page
+                        elif isinstance(get_body_end_page, list):
+                            self.body_end_page[0] = get_body_end_page[0]
+                        else:
+                            build_flg = False
+                            print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 body_end_page 格式有误")
                 # 模板 C
                 elif self.templ_choice == 'C':
                     self.add_headwords = build["template"]["c"].get("add_headwords", True)
                 # 模板 D
                 elif self.templ_choice == 'D':
                     self.add_headwords = build["template"]["d"].get("add_headwords", True)
-                    # 是否分卷, 卷数, 卷名(可选)
-                    self.multi_volume = build["template"]["d"].get("multi_volume", False)
-                    self.vol_names = build["template"]["d"].get("vol_names", [])
                 # 设定其他变量
                 self.fname_final_txt = f"{self.name}.txt"
                 self.fname_css = f"{self.name_abbr.lower()}.css"

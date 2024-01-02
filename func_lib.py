@@ -350,7 +350,7 @@ class FuncLib():
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "读取目录文件失败")
 
-    def read_index_all(self, file_index_all, img_dict_flg=True, vol_i=0):
+    def read_index_all_file(self, file_index_all, img_dict_flg=True, vol_i=0):
         done_flg = True
         dcts = []
         dct_chaps = []
@@ -732,7 +732,7 @@ class FuncLib():
                 else:
                     i_str = str(n-self.settings.body_start[vol_i]+1).zfill(len_digit)
                     f_title_new = f'{self.settings.name_abbr}[{str(vol_i+1).zfill(2)}]_B{i_str}'
-                imgs.append({'vol_n': vol_i+1, 'title': f_title_new, 'path': dname+'/'+f_title_new+f_ext})
+                imgs.append({'vol_n': vol_i+1, 'title': f_title_new, 'path': dname+'/'+f_title_new+f_ext, 'i_in_vol': n-1})
             else:
                 # 非分卷
                 if n < self.settings.body_start[vol_i]:
@@ -741,7 +741,7 @@ class FuncLib():
                 else:
                     i_str = str(n-self.settings.body_start[vol_i]+1).zfill(len_digit)
                     f_title_new = f'{self.settings.name_abbr}_B{i_str}'
-                imgs.append({'vol_n': vol_i+1, 'title': f_title_new, 'path': f_title_new+f_ext})
+                imgs.append({'vol_n': vol_i+1, 'title': f_title_new, 'path': f_title_new+f_ext, 'i_in_vol': n-1})
             # 复制新文件到输出文件夹
             if copy_flg:
                 shutil.copy(img_file, os.path.join(dir_imgs_out, f_title_new+f_ext))

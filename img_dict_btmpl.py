@@ -46,8 +46,8 @@ class ImgDictBtmpl:
                 imgs, img_lens = self.func.prepare_imgs(check_result[1], dir_imgs_tmp)
                 # self.book_dicts = []
             # 1.开始生成各部分源文本
-            dcts = self.func.read_index_all(check_result[0])
             # (1) 生成主体词条, 带层级导航
+            dcts = self.func.read_index_all_file(check_result[0])
             headwords = self._make_entries_with_navi(imgs, img_lens, dcts, file_1)
             # (2) 生成同义词重定向
             if check_result[2]:
@@ -69,61 +69,82 @@ class ImgDictBtmpl:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
 
-    def extract_final_txt(self, file_final_txt, out_dir, dict_name, file_css=None):
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name, file_css=None, multi_vols_flg=False, volume_num=1):
         """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
         dcts = []
+        syns = []
+        # (一) 分析提取源 txt 文本
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.*?)\|([\d|\-]+)</div>$', flags=re.M)
+            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.*?)\|(\d+)\|([\d|\-]+)</div>$', flags=re.M)
             for t in pat_index.findall(text):
                 dct = {
                     "id": t[0],
                     "name": t[1],
-                    "page": int(t[2])
+                    "page": int(t[3]),
+                    "vol_n": int(t[2])
                 }
                 dcts.append(dct)
-            # 2.提取 syns, 并同时输出 syns.txt
-            syns_flg = False
-            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in self.settings.pat_relink.findall(text):
-                    fw.write(f'{t[0]}\t{t[1]}\n')
-                    syns_flg = True
-            if not syns_flg:
-                os.remove(os.path.join(out_dir, 'syns.txt'))
-            # 3.识别 name_abbr, body_start
-            body_start = 1
-            names = []
-            for m in re.findall(r'^([A-Z|\d]+)_A(\d+)[\r\n]+<link rel="stylesheet"', text, flags=re.M):
-                if m[0].upper() not in names:
-                    names.append(m[0].upper())
-                if int(m[1])+1 > body_start:
-                    body_start = int(m[1])+1
-            if len(names) > 0:
-                name_abbr = names[0]
+            # 2.识别 name_abbr, body_start
+            body_start = [1 for i in range(volume_num)]
+            abbrs = []
+            if not multi_vols_flg:
+                pat_head = re.compile(r'^([A-Z|\d]+)_A(\d+)[\r\n]+<link rel="stylesheet"', flags=re.M)
+                for m in pat_head.findall(text):
+                    if int(m[1])+1 > body_start[0]:
+                        body_start[0] = int(m[1])+1
+                    if m[0].upper() not in abbrs:
+                        abbrs.append(m[0].upper())
+            else:
+                pat_head = re.compile(r'^([A-Z|\d]+)\[(\d+)\]_A(\d+)[\r\n]+<link rel="stylesheet"', flags=re.M)
+                for m in pat_head.findall(text):
+                    vol_i = int(m[1])-1
+                    if int(m[2])+1 > body_start[vol_i]:
+                        body_start[vol_i] = int(m[2])+1
+                    if m[0].upper() not in abbrs:
+                        abbrs.append(m[0].upper())
+            if abbrs:
+                name_abbr = abbrs[0]
             else:
                 print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典首字母缩写, 已设置默认值")
                 name_abbr = 'XXXXCD'
-        # 整理 index, 输出 index_all.txt
+            # 3.提取 syns
+            for t in self.settings.pat_relink.findall(text):
+                if not t[1].startswith(name_abbr):
+                    syns.append((t[0], t[1]))
+        # (二) 整理输出提取结果
+        # 1.index_all.txt
         dcts.sort(key=lambda dct: dct["id"], reverse=False)
         with open(os.path.join(out_dir, 'index_all.txt'), 'w', encoding='utf-8') as fw:
             for dct in dcts:
                 if dct["page"] == 0:
                     fw.write(f'{dct["name"]}\t\n')
                 else:
-                    fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
-        # 输出 build.toml 文件
+                    if dct["vol_n"] > 1:
+                        fw.write(f'{dct["name"]}\t[{str(dct["vol_n"])}]{str(dct["page"])}\n')
+                    else:
+                        fw.write(f'{dct["name"]}\t{str(dct["page"])}\n')
+        # 2.syns.txt
+        if syns:
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for s in syns:
+                    fw.write(f'{s[0]}\t{s[1]}\n')
+        # 3.build.toml 文件
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
         self.settings.build["global"]["templ_choice"] = "B"
         self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
-        self.settings.build["template"]["b"]["body_start"] = body_start
+        self.settings.build["global"]["multi_volume"] = multi_vols_flg
+        if not multi_vols_flg:
+            self.settings.build["template"]["b"]["body_start"] = body_start[0]
+        else:
+            self.settings.build["template"]["b"]["body_start"] = body_start
         # 判断分栏选项
         if file_css and os.path.split(file_css)[1].lower() == name_abbr.lower()+'.css':
             with open(file_css, 'r', encoding='utf-8') as fr:
                 if not re.search(r'/\*<insert_css: auto_split>\*/', fr.read(), flags=re.I):
                     self.settings.build["template"]["b"]["auto_split_columns"] = 2
-        # 判断 navi_items
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
 
@@ -216,7 +237,7 @@ class ImgDictBtmpl:
             toc_entry += '<div class="toc-list"><ul>'
             for top in tops:
                 toc_entry += f'<li><a href="entry://{self.settings.name_abbr}_{top}">{top}</a></li>'
-            toc_entry += '</ul><div class="bottom-navi">' + '<span class="navi-item-middle">&#8197;&#12288;&#8197;</span>' + '</div>\n'
+            toc_entry += '</ul><div class="bottom-navi"><span class="navi-item-middle">&#8197;&#12288;&#8197;</span></div>\n'
             toc_entry += '</div>\n</>\n'
             fw.write(toc_entry)
             # 4.补页面词条
@@ -241,12 +262,12 @@ class ImgDictBtmpl:
             if dct["level"] == -1:
                 part_title = f'{dct["title"]}\n'
                 if dct["id"]:
-                    part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}|{dct["body"]}</div>\n'
+                    part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|{dct["title"]}|{str(dct["vol_n"])}|{dct["body"]}</div>\n'
                 else:
                     part_index = ''
             else:
                 part_title = f'{self.settings.name_abbr}_{dct["title"]}\n'
-                part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}|{dct["body"]}</div>\n'
+                part_index = f'<div class="index-all" style="display:none;">{str(dct["id"]).zfill(10)}|【L{str(dct["level"])}】{dct["title"]}|{str(dct["vol_n"])}|{dct["body"]}</div>\n'
         # 2.css 引用部分
         part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
         # 3.top-navi-level 部分
@@ -274,7 +295,7 @@ class ImgDictBtmpl:
             part_img = '<div class="main-img">'
             body_start = self.settings.body_start[dct["vol_n"]-1]
             body_end_page = self.settings.body_end_page[dct["vol_n"]-1]
-            if self.settings.split_columns == 2 and (i >= body_start-1 and i <= body_end_page+body_start-2):
+            if self.settings.split_columns == 2 and (imgs[i]["i_in_vol"] >= body_start-1 and imgs[i]["i_in_vol"] <= body_end_page+body_start-2):
                 part_img += f'<div class="left"><div class="pic"><img src="/{imgs[i]["path"]}"></div></div>'
                 part_img += f'<div class="right"><div class="pic"><img src="/{imgs[i]["path"]}"></div></div>'
             else:

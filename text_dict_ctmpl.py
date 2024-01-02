@@ -57,34 +57,49 @@ class TextDictCtmpl:
 
     def extract_final_txt(self, file_final_txt, out_dir, dict_name):
         """ 从模板C词典的源 txt 文本中提取 index, syns 信息 """
-        # 提取资料
+        dcts = []
+        syns = []
+        # (一) 分析提取源 txt 文本
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
-            # 1.提取 index
-            pat_index = re.compile(r'^<div class="entry-headword">(.+?)</div>[\r\n]+<div class="entry-body">(.+?)</div>[\r\n]+</>$', flags=re.M)
-            with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
-                for t in pat_index.findall(text):
-                    fw.write(f'{t[0]}\t{t[1]}\n')
-            # 2.提取 syns
-            syns_flg = False
-            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
-                for t in self.settings.pat_relink.findall(text):
-                    fw.write(f'{t[0]}\t{t[1]}\n')
-                    syns_flg = True
-            if not syns_flg:
-                os.remove(os.path.join(out_dir, 'syns.txt'))
-            # 3.识别 name_abbr
+            # 1.提取 index_all
+            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.+?)</div>.+?<div class="entry-body">(.+?)</div>$', flags=re.M+re.S)
+            for t in pat_index.findall(text):
+                dct = {
+                    "id": t[0],
+                    "name": t[1],
+                    "body": t[2]
+                }
+                dcts.append(dct)
+            # 2.识别 name_abbr
             mth = re.search(r'^<link rel="stylesheet" type="text/css" href="([^>/\"\.]+?)\.css"/>$', text, flags=re.M)
             if mth:
                 name_abbr = mth.group(1).upper()
             else:
                 print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典缩略字母, 已设置默认值")
                 name_abbr = 'XXXXCD'
-        # 输出 build.toml 文件
+            # 3.提取 syns
+            for t in self.settings.pat_relink.findall(text):
+                syns.append((t[0], t[1]))
+        # (二) 整理输出提取结果
+        # 1.index.txt
+        dcts.sort(key=lambda dct: dct["id"], reverse=False)
+        with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
+            for dct in dcts:
+                fw.write(f'{dct["name"]}\t{dct["body"]}\n')
+        # 2.syns.txt
+        if syns:
+            with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
+                for s in syns:
+                    fw.write(f'{s[0]}\t{s[1]}\n')
+        # 3.build.toml 文件
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
         self.settings.build["global"]["templ_choice"] = "C"
         self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
+        # 判断 add_headwords
+        if not re.search(r'^<div class="entry-headword">[^<]+</div>$', text, flags=re.M):
+            self.settings.build["template"]["c"]["add_headwords"] = False
         with open(os.path.join(out_dir, 'build.toml'), 'w', encoding='utf-8') as fw:
             fw.write(dumps(self.settings.build))
 
@@ -100,6 +115,7 @@ class TextDictCtmpl:
                         mth = self.settings.pat_tab.match(line)
                         part_title = f'{mth.group(1)}\n'
                         part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
+                        part_index = f'<div class="index-all" style="display:none;">{str(i).zfill(10)}|{mth.group(1)}</div>\n'
                         if not self.settings.add_headwords:
                             part_headword = ''
                         else:
@@ -109,7 +125,7 @@ class TextDictCtmpl:
                         else:
                             part_body = f'<div class="entry-body"><p>{mth.group(2)}</p></div>\n'
                         # 将完整词条写入文件
-                        fa.write(part_title+part_css+part_headword+part_body+'</>\n')
+                        fa.write(part_title+part_css+part_index+part_headword+part_body+'</>\n')
                         headwords.append(mth.group(1))
                     else:
                         print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")

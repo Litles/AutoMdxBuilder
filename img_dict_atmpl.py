@@ -37,7 +37,7 @@ class ImgDictAtmpl:
             dir_imgs_tmp = os.path.join(self.settings.dir_output_tmp, self.settings.dname_imgs)
             # 1.分步生成各部分源文本
             file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_img)  # 图像词条
-            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entry_toc)  # 总目词条
+            file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_toc)  # 总目词条
             file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_headword)  # 词目重定向
             file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_syn)  # 同义词重定向
             file_5 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
@@ -83,91 +83,186 @@ class ImgDictAtmpl:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
 
-    def extract_final_txt(self, file_final_txt, out_dir, dict_name, file_css=None):
+    def extract_final_txt(self, file_final_txt, out_dir, dict_name, file_css=None, multi_vols_flg=False, volume_num=1):
         """ 从模板A词典的源 txt 文本中提取 index, toc, syns 信息 """
-        # 1.提取信息
+        # (一) 分析提取源 txt 文本
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 识别 name_abbr, body_start
-            body_start = 1
-            names = []
-            for m in re.findall(r'^<div class="main-img">.*?<div class="pic"><img src="/([a-zA-Z|\d]+)_A(\d+)\.\w+">', text, flags=re.M):
-                if int(m[1])+1 > body_start:
-                    body_start = int(m[1])+1
-                if m[0].upper() not in names:
-                    names.append(m[0].upper())
-            if len(names) > 0:
-                name_abbr = names[0].upper()
+            body_start = [1 for i in range(volume_num)]
+            abbrs = []
+            if not multi_vols_flg:
+                pat_img = re.compile(r'^<div class="main-img">.*?<div class="pic"><img src="/([a-zA-Z|\d]+)_A(\d+)\.\w+">', flags=re.M)
+                for m in pat_img.findall(text):
+                    if int(m[1])+1 > body_start[0]:
+                        body_start[0] = int(m[1])+1
+                    if m[0].upper() not in abbrs:
+                        abbrs.append(m[0].upper())
+            else:
+                pat_img = re.compile(r'^<div class="main-img">.*?<div class="pic"><img src="/[^\/]+?/([a-zA-Z|\d]+)\[(\d+)\]_A(\d+)\.\w+">', flags=re.M)
+                for m in pat_img.findall(text):
+                    vol_i = int(m[1])-1
+                    if int(m[2])+1 > body_start[vol_i]:
+                        body_start[vol_i] = int(m[2])+1
+                    if m[0].upper() not in abbrs:
+                        abbrs.append(m[0].upper())
+            if abbrs:
+                name_abbr = abbrs[0]
             else:
                 print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典首字母缩写, 已设置默认值")
                 name_abbr = 'XXXXCD'
             # 提取 navi_items
             navi_items = array()
             top_navi = re.search(r'^<div class="top-navi">(.*?)</div>$', text, flags=re.M)
-            for m in re.findall(r'<span class="navi-item"><a href="entry://[A-Z|\d]+_([^">]+)">([^<]+)</a></span>', top_navi[1]):
-                if m[1] != '🕮':
-                    navi_items.add_line({"a": m[1], "ref": m[0]})
+            if not multi_vols_flg:
+                pat_item = re.compile(r'<span class="navi-item"><a href="entry://[A-Z|\d]+_([^">]+)">([^<]+)</a></span>')
+                for m in pat_item.findall(top_navi[1]):
+                    if m[1] != '🕮':
+                        navi_items.add_line({"a": m[1], "ref": m[0]})
+            else:
+                pat_item = re.compile(r'<span class="navi-item"><a href="entry://[A-Z|\d]+(\[\d+\])_([^">]+)">([^<]+)</a></span>')
+                for m in pat_item.findall(top_navi[1]):
+                    if m[2] != '🕮':
+                        navi_items.add_line({"a": m[2], "ref": m[0]+m[1]})
             # 提取 index, toc, syns
             index = []
             toc = []
             syns = []
-            for m in re.findall(r'^([^\r\n]+)[\r\n]+@@@LINK=([^\r\n]+)[\r\n]+</>$', text, flags=re.M):
-                # 区分: 索引, 目录, 同义词
-                dct = {}
-                if m[1].startswith(name_abbr+'_'):
-                    # 获取页码
-                    n = len(name_abbr) + 2
-                    if m[1].startswith(name_abbr+'_A'):
-                        dct["page"] = int(m[1][n:]) - body_start
+            if not multi_vols_flg:
+                for m in self.settings.pat_relink.findall(text):
+                    # 区分: 索引, 目录, 同义词
+                    dct = {}
+                    if m[1].startswith(name_abbr+'_'):
+                        dct["vol_n"] = 1
+                        # 获取页码
+                        n = len(name_abbr) + 2
+                        if m[1].startswith(name_abbr+'_A'):
+                            dct["page"] = int(m[1][n:]) - body_start[0]
+                        elif m[1].startswith(name_abbr+'_B'):
+                            dct["page"] = int(m[1][n:])
+                        # 区分目录和索引
+                        if m[0].startswith(name_abbr+'_'):
+                            dct["name"] = m[0][n-1:]
+                            toc.append(dct)
+                        else:
+                            dct["name"] = m[0]
+                            index.append(dct)
                     else:
-                        dct["page"] = int(m[1][n:])
-                    # 区分目录和索引
-                    if m[0].startswith(name_abbr+'_'):
-                        dct["name"] = m[0][n-1:]
-                        toc.append(dct)
+                        syns.append((m[0], m[1]))
+            else:
+                pat = re.compile(name_abbr+r'\[(\d+)\]_[AB]')
+                pat_toc = re.compile(name_abbr+r'\[\d+\]_(.+?)$')
+                pat_a = re.compile(r'_A(\d+)$')
+                pat_b = re.compile(r'_B(\d+)$')
+                for m in self.settings.pat_relink.findall(text):
+                    # 区分: 索引, 目录, 同义词
+                    dct = {}
+                    mth = pat.match(m[1])
+                    if mth:
+                        vol_n = int(mth.group(1))
+                        mth_a = pat_a.search(m[1])
+                        mth_b = pat_b.search(m[1])
+                        dct["vol_n"] = vol_n
+                        # 获取页码
+                        if mth_a:
+                            dct["page"] = int(mth_a.group(1)) - body_start[vol_n-1]
+                        elif mth_b:
+                            dct["page"] = int(mth_b.group(1))
+                        # 区分目录和索引
+                        mth_toc = pat_toc.match(m[0])
+                        if mth_toc:
+                            dct["name"] = mth_toc.group(1)
+                            toc.append(dct)
+                        else:
+                            dct["name"] = m[0]
+                            index.append(dct)
                     else:
-                        dct["name"] = m[0]
-                        index.append(dct)
-                else:
-                    syns.append((m[0], m[1]))
-        # 2.整理提取结果
-        # (a) index.txt
-        if len(index) != 0:
-            index.sort(key=lambda x: x["page"], reverse=False)
+                        syns.append((m[0], m[1]))
+        # (二) 整理输出提取结果
+        # 1.index.txt
+        if index:
+            index.sort(key=lambda x: x["vol_n"]*100000+x["page"], reverse=False)
             with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
                 for d in index:
-                    fw.write(f'{d["name"]}\t{str(d["page"])}\n')
-        # (b) toc.txt
-        if len(toc) != 0:
-            with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
-                # 获取TOC总目录词条
-                toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
-                if toc_entry:
-                    for m in re.findall(r'^(\t*)<li><a href="entry://'+name_abbr+r'_([^\">]+)\">', toc_entry.group(0), flags=re.M):
-                        p = 0
-                        for d in toc:
-                            if m[1] == d["name"]:
-                                p = d["page"]
-                                break
-                        fw.write(f'{m[0]}{m[1]}\t{str(p)}\n')
-        # (c) syns.txt
-        if len(syns) != 0:
+                    if d["vol_n"] == 1:
+                        fw.write(f'{d["name"]}\t{str(d["page"])}\n')
+                    else:
+                        fw.write(f'{d["name"]}\t[{str(d["vol_n"])}]{str(d["page"])}\n')
+        # 2.toc.txt
+        if toc:
+            if not multi_vols_flg:
+                with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
+                    # 获取TOC总目录词条
+                    toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
+                    if toc_entry:
+                        pat_link = re.compile(r'<a href="entry://'+name_abbr+r'_([^\">]+)\">', flags=re.I)
+                        for m in re.findall(r'^(\t*)<li>(.+?)<[\/ulia]+>', toc_entry.group(0), flags=re.M):
+                            mth = pat_link.match(m[1])
+                            if mth:
+                                for d in toc:
+                                    if mth.group(1) == d["name"]:
+                                        fw.write(f'{m[0]}{d["name"]}\t{str(d["page"])}\n')
+                                        break
+                            else:
+                                fw.write(f'{m[0]}{m[1]}\n')
+            else:
+                toc_entries = re.findall(r'^TOC_'+name_abbr+r'(\[\d+\])(.*?)</>$', text, flags=re.S+re.M)
+                if toc_entries:
+                    # 获取分卷TOC目录词条
+                    for entry in toc_entries:
+                        vol_n = int(entry[0].strip('[]'))
+                        pat_link = re.compile(r'<a href="entry://'+name_abbr+r'\[\d+\]_([^\">]+)\">', flags=re.I)
+                        with open(os.path.join(out_dir, f'toc_{str(vol_n).zfill(2)}.txt'), 'w', encoding='utf-8') as fw:
+                            for m in re.findall(r'^(\t*)<li>(.+?)<[\/ulia]+>', entry[1], flags=re.M):
+                                mth = pat_link.match(m[1])
+                                if mth:
+                                    for d in toc:
+                                        if vol_n == d["vol_n"] and mth.group(1) == d["name"]:
+                                            fw.write(f'{m[0]}{d["name"]}\t{str(d["page"])}\n')
+                                            break
+                                else:
+                                    fw.write(f'{m[0]}{m[1]}\n')
+                else:
+                    with open(os.path.join(out_dir, 'toc.txt'), 'w', encoding='utf-8') as fw:
+                        # 获取TOC总目录词条
+                        toc_entry = re.search(r'^TOC_.*?</>$', text, flags=re.S+re.M)
+                        if toc_entry:
+                            pat_link = re.compile(r'<a href="entry://'+name_abbr+r'\[(\d+)\]_([^\">]+)\">', flags=re.I)
+                            for m in re.findall(r'^(\t*)<li>(.+?)<[\/ulia]+>', toc_entry.group(0), flags=re.M):
+                                mth = pat_link.match(m[1])
+                                if mth:
+                                    for d in toc:
+                                        if int(mth.group(1)) == d["vol_n"] and mth.group(2) == d["name"]:
+                                            if d["vol_n"] > 1:
+                                                fw.write(f'{m[0]}{d["name"]}\t[{mth.group(1)}]{str(d["page"])}\n')
+                                            else:
+                                                fw.write(f'{m[0]}{d["name"]}\t{str(d["page"])}\n')
+                                            break
+                                else:
+                                    fw.write(f'{m[0]}{m[1]}\n')
+
+        # 3.syns.txt
+        if syns:
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
                 for s in syns:
                     fw.write(f'{s[0]}\t{s[1]}\n')
-        # (d) build.toml
+        # 4.build.toml
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
         self.settings.build["global"]["templ_choice"] = "A"
         self.settings.build["global"]["name"] = dict_name
         self.settings.build["global"]["name_abbr"] = name_abbr
-        self.settings.build["template"]["a"]["body_start"] = body_start
+        self.settings.build["global"]["multi_volume"] = multi_vols_flg
+        if not multi_vols_flg:
+            self.settings.build["template"]["a"]["body_start"] = body_start[0]
+        else:
+            self.settings.build["template"]["a"]["body_start"] = body_start
         # 判断分栏选项
         if file_css and os.path.split(file_css)[1].lower() == name_abbr.lower()+'.css':
             with open(file_css, 'r', encoding='utf-8') as fr:
                 if not re.search(r'/\*<insert_css: auto_split>\*/', fr.read(), flags=re.I):
                     self.settings.build["template"]["a"]["auto_split_columns"] = 2
         # 判断 navi_items
-        if len(navi_items) > 0:
+        if navi_items:
             build_str = re.sub(r'[\r\n]+#navi_items = \[.*?#\][^\r\n]*?', '', dumps(self.settings.build), flags=re.S+re.I)
             build_str = re.sub(r'[\r\n]+#\s*?（可选）导航栏链接.+$', '', build_str, flags=re.M)
             self.settings.build = loads(build_str)
@@ -196,12 +291,11 @@ class ImgDictAtmpl:
             else:
                 entry_txt += f'<div class="toc-title">分目录（第 {str(vol_i+1).zfill(2)} 卷）</div>\n<div class="toc-text">\n<ul>\n'
         # 2.主体部分
-        n_total = len(pairs)
         tab = '\t'
         prefix = '<ul>'
         suffix = '</ul></li>'
         # 根据层级生成 html 列表结构
-        for i in range(n_total):
+        for i in range(len(pairs)):
             pair = pairs[i]
             # 1.确定列表项内容
             if mix_flg:
@@ -309,7 +403,7 @@ class ImgDictAtmpl:
                         else:
                             str_link = f'{str_b}_B{str(pair["page"]).zfill(len_digit)}'
                         fw.write(f'{str_b}_{pair["title"]}\n@@@LINK={str_link}\n</>\n')
-                        fw.write(f'{pair["title"]}[{str(pair["vol_n"]).zfill(2)}]\n@@@LINK={str_b}_{pair["title"]}\n</>\n')
+                        # fw.write(f'{pair["title"]}[{str(pair["vol_n"]).zfill(2)}]\n@@@LINK={str_b}_{pair["title"]}\n</>\n')
                         headwords.append(pair["title"])
         else:
             with open(file_out, 'w', encoding='utf-8') as fw:
@@ -328,7 +422,7 @@ class ImgDictAtmpl:
                             else:
                                 str_link = f'{self.settings.name_abbr}_B{str(pair["page"]).zfill(len_digit)}'
                             fw.write(f'{self.settings.name_abbr}_{pair["title"]}\n@@@LINK={str_link}\n</>\n')
-                            fw.write(f'{pair["title"]}\n@@@LINK={self.settings.name_abbr}_{pair["title"]}\n</>\n')
+                            # fw.write(f'{pair["title"]}\n@@@LINK={self.settings.name_abbr}_{pair["title"]}\n</>\n')
                             headwords.append(pair["title"])
         print("重定向(词目)词条已生成")
         return headwords
@@ -346,7 +440,7 @@ class ImgDictAtmpl:
                 # 判断是否要分栏
                 body_start = self.settings.body_start[img["vol_n"]-1]
                 body_end_page = self.settings.body_end_page[img["vol_n"]-1]
-                if self.settings.split_columns == 2 and (i >= body_start-1 and i <= body_end_page+body_start-2):
+                if self.settings.split_columns == 2 and (img["i_in_vol"] >= body_start-1 and img["i_in_vol"] <= body_end_page+body_start-2):
                     part_img += f'<div class="left"><div class="pic"><img src="/{img["path"]}"></div></div>'
                     part_img += f'<div class="right"><div class="pic"><img src="/{img["path"]}"></div></div>'
                 else:
