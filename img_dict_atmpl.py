@@ -209,10 +209,16 @@ class ImgDictAtmpl:
                 toc_entries = re.findall(r'^TOC_'+name_abbr+r'(\[\d+\])(.*?)</>$', text, flags=re.S+re.M)
                 if toc_entries:
                     # 获取分卷TOC目录词条
+                    pat_vname = re.compile(r'^<div class="toc-title">分目录（(.+?)）</div>', flags=re.M)
                     for entry in toc_entries:
+                        mth_vname = pat_vname.search(entry[1])
+                        if mth_vname:
+                            vname = '_'+mth_vname.group(1)
+                        else:
+                            vname = ''
                         vol_n = int(entry[0].strip('[]'))
                         pat_link = re.compile(r'<a href="entry://'+name_abbr+r'\[\d+\]_([^\">]+)\">', flags=re.I)
-                        with open(os.path.join(out_dir, f'toc_{str(vol_n).zfill(2)}.txt'), 'w', encoding='utf-8') as fw:
+                        with open(os.path.join(out_dir, f'toc_{str(vol_n).zfill(2)}{vname}.txt'), 'w', encoding='utf-8') as fw:
                             for m in re.findall(r'^(\t*)<li>(.+?)<[\/ulia]+>', entry[1], flags=re.M):
                                 mth = pat_link.match(m[1])
                                 if mth:
@@ -286,7 +292,7 @@ class ImgDictAtmpl:
         else:
             # 分目录
             entry_txt += f'TOC_{self.settings.name_abbr}[{str(vol_i+1).zfill(2)}]\n<link rel="stylesheet" type="text/css" href="/{self.settings.name_abbr.lower()}.css"/>\n'
-            if self.settings.vol_names:
+            if self.settings.vol_names[vol_i] is not None:
                 entry_txt += f'<div class="toc-title">分目录（{self.settings.vol_names[vol_i]}）</div>\n<div class="toc-text">\n<ul>\n'
             else:
                 entry_txt += f'<div class="toc-title">分目录（第 {str(vol_i+1).zfill(2)} 卷）</div>\n<div class="toc-text">\n<ul>\n'
@@ -343,7 +349,7 @@ class ImgDictAtmpl:
                     if file_toc[i]:
                         pairs = self.func.read_toc_file(file_toc[i], i)
                         toc_txts.append(self._get_toc_entry_txt(pairs, False, i))
-                        if self.settings.vol_names:
+                        if self.settings.vol_names[i] is not None:
                             top_toc_txt += f'\t<li><a href="entry://TOC_{self.settings.name_abbr}[{str(i+1).zfill(2)}]">{self.settings.vol_names[i]}</a></li>\n'
                         else:
                             top_toc_txt += f'\t<li><a href="entry://TOC_{self.settings.name_abbr}[{str(i+1).zfill(2)}]">第 {str(i+1).zfill(2)} 卷</a></li>\n'
@@ -536,6 +542,7 @@ class ImgDictAtmpl:
         """ 识别分卷的 index, toc 文本 """
         done_flg = True
         pat = re.compile(prefix+r'_(\d+)', flags=re.I)
+        pat_vname = re.compile(prefix+r'_\d+_(.+?)\.txt', flags=re.I)
         # 1.开始识别,读取
         lst_vols = [[] for i in range(self.settings.volume_num)]
         break_flg = False
@@ -566,6 +573,10 @@ class ImgDictAtmpl:
                                 else:
                                     print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"{fname} 第 {i} 行未匹配, 已忽略")
                         elif prefix == 'toc':
+                            if self.settings.vol_names[vol_n-1] is None:
+                                mth_vname = pat_vname.match(fname)
+                                if mth_vname:
+                                    self.settings.vol_names[vol_n-1] = mth_vname.group(1)
                             for line in fr:
                                 i += 1
                                 mth = self.settings.pat_toc.match(line)

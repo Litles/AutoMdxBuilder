@@ -266,23 +266,27 @@ class TextDictDtmpl:
             if pass_flg and not lst_file_index_all:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "未读取到 index_all 文件")
                 pass_flg = False
-            elif pass_flg and self.settings.vol_names and len(lst_file_index_all) != len(self.settings.vol_names):
-                print(Fore.RED + "ERROR: " + Fore.RESET + "index_all 文件数目与 build.toml 中 vol_names 不匹配")
-                pass_flg = False
             elif pass_flg:
                 self.settings.volume_num = len(lst_file_index_all)
                 # 3.合并各 index_all 文本, 顺便检查格式
                 lst_file_index_all.sort(key=lambda dct: dct["vol_n"], reverse=False)
+                pat_vname = re.compile(r'index_all_\d+_(.+?)\.txt', flags=re.I)
                 with open(final_index_all, 'w', encoding='utf-8') as fw:
                     break_flg = False
                     for x in range(len(lst_file_index_all)):
                         fname = os.path.split(lst_file_index_all[x]["path"])[1]
                         with open(lst_file_index_all[x]["path"], 'r', encoding='utf-8') as fr:
-                            # 写入卷标
-                            if self.settings.vol_names:
-                                fw.write('【L0】'+self.settings.vol_names[x]+'\t\n')
-                            else:
-                                fw.write('【L0】第'+str(lst_file_index_all[x]["vol_n"]).zfill(2)+'卷\t\n')
+                            # 获取卷名, 写入卷标
+                            try:
+                                vname = self.settings.vol_names[x]
+                            except IndexError:
+                                vname = None
+                            if not vname:
+                                if pat_vname.match(fname):
+                                    vname = pat_vname.match(fname).group(1)
+                                else:
+                                    vname = '第'+str(lst_file_index_all[x]["vol_n"]).zfill(2)+'卷'
+                            fw.write('【L0】'+vname+'\t\n')
                             # 整合开始
                             i = 0
                             for line in fr:

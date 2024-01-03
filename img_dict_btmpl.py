@@ -397,6 +397,7 @@ class ImgDictBtmpl:
         done_flg = True
         lst_file_index_all = [None for i in range(self.settings.volume_num)]
         final_index_all = os.path.join(dir_out, self.settings.fname_index_all)
+        pat_vname = re.compile(r'(index_all|toc_all)_\d+_(.+?)\.txt', flags=re.I)
         # (1) 遍历 index_all
         pat1 = re.compile(r'index_all_(\d+)', flags=re.I)
         for fname in os.listdir(dir_input):
@@ -410,6 +411,10 @@ class ImgDictBtmpl:
                         done_flg = False
                         break
                     elif index_check_num == 2:
+                        if self.settings.vol_names[vol_n-1] is None:
+                            mth_vname = pat_vname.match(fname)
+                            if mth_vname:
+                                self.settings.vol_names[vol_n-1] = pat_vname.match(fname).group(2)
                         shutil.copy(fp, fp_new)
                         lst_file_index_all[vol_n-1] = fp_new
                 elif not os.path.exists(fp_new):
@@ -428,6 +433,10 @@ class ImgDictBtmpl:
                         break
                     elif toc_check_num == 2:
                         if self.func.toc_all_to_index(fp, fp_new):
+                            if self.settings.vol_names[vol_n-1] is None:
+                                mth_vname = pat_vname.match(fname)
+                                if mth_vname:
+                                    self.settings.vol_names[vol_n-1] = pat_vname.match(fname).group(2)
                             lst_file_index_all[vol_n-1] = fp_new
                         else:
                             done_flg = False
@@ -446,7 +455,7 @@ class ImgDictBtmpl:
                     if lst_file_index_all[x]:
                         with open(lst_file_index_all[x], 'r', encoding='utf-8') as fr:
                             # 写入卷标
-                            if self.settings.vol_names:
+                            if self.settings.vol_names[x] is not None:
                                 fw.write('【L0】'+self.settings.vol_names[x]+'\t\n')
                             else:
                                 fw.write('【L0】第'+str(x+1).zfill(2)+'卷\t\n')

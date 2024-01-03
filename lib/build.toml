@@ -6,7 +6,7 @@ name = "文史工具书词典"  # 书名
 name_abbr = "WSGJSCD"   # 书名首字母缩写
 simp_trad_flg = false  # 是否需要繁简通搜
 multi_volume = false  # 是否是多卷的
-# 多卷模式下可以标示每个分卷名
+# 多卷模式下可以标示每个分卷名 (作用于 toc, index_all/toc_all)
 #vol_names = [
 #    "政治斗争卷",
 #    "政治人物卷",

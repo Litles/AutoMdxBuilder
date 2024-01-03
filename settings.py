@@ -85,7 +85,7 @@ class Settings:
         self.add_headwords = True
         self.multi_volume = False
         self.volume_num = 1
-        self.vol_names = []
+        self.vol_names = [None]
 
     def load_build_toml(self, file_toml, pdf_flg=False, outside_flg=True):
         build_flg = True
@@ -102,7 +102,6 @@ class Settings:
                 # --- 区别设置 ---
                 self.templ_choice = build["global"]["templ_choice"].upper()  # 模板选择
                 self.multi_volume = build["global"].get("multi_volume", False)
-                self.vol_names = build["global"].get("vol_names", [])
                 # 模板 A, B
                 if self.templ_choice in ('A', 'B'):
                     # --- 1.独有部分 ----
@@ -115,15 +114,24 @@ class Settings:
                     else:
                         label = 'b'
                     # --- 2.共有部分 ----
+                    # body_start
                     self.body_start = build["template"][label]["body_start"]  # 正文起始页为第几张图(>=1)
                     if isinstance(self.body_start, int):
                         self.body_start = [self.body_start]
-                    # 卷数, 卷名(可选)
-                    if self.multi_volume and len(self.vol_names) not in (0, len(self.body_start)):
-                        build_flg = False
-                        print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 body_start 和 vol_names 数目不匹配")
-                    elif self.multi_volume:
-                        self.volume_num = len(self.body_start)
+                    # 卷数, 卷名(默认全 None)
+                    self.volume_num = len(self.body_start)
+                    if self.multi_volume:
+                        get_vol_names = build["global"].get("vol_names", self.vol_names[0])
+                        if not get_vol_names:
+                            self.vol_names = [None for i in range(self.volume_num)]
+                        elif isinstance(get_vol_names, list) and len(get_vol_names) == self.volume_num:
+                            self.vol_names = get_vol_names
+                        elif isinstance(get_vol_names, list) and len(get_vol_names) != self.volume_num:
+                            print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 body_start 和 vol_names 数目不匹配")
+                            build_flg = False
+                        else:
+                            print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 vol_names 设置有误")
+                            build_flg = False
                     # 分栏 (可选)
                     self.split_columns = build["template"][label].get("auto_split_columns", 1)
                     get_body_end_page = build["template"][label].get("body_end_page", self.body_end_page[0])
@@ -155,6 +163,10 @@ class Settings:
                 # 模板 D
                 elif self.templ_choice == 'D':
                     self.add_headwords = build["template"]["d"].get("add_headwords", True)
+                    self.vol_names = build["global"].get("vol_names", self.vol_names)
+                    if not isinstance(self.vol_names, list):
+                        build_flg = False
+                        print(Fore.RED + "ERROR: " + Fore.RESET + "build.toml 中 vol_names 格式有误")
                 # 设定其他变量
                 self.fname_final_txt = f"{self.name}.txt"
                 self.fname_css = f"{self.name_abbr.lower()}.css"

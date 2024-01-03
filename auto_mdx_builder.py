@@ -397,19 +397,19 @@ class AutoMdxBuilder:
             else:
                 print(Fore.RED + "ERROR: " + Fore.RESET + "还原失败")
             # 处理 mdd
-            file_mdd = os.path.splitext(xfile)[0] + '.mdd'
-            if os.path.isfile(file_mdd) and templ_choice in ('A', 'B'):
-                dir_data = os.path.join(out_dir, "imgs")
-                if os.path.exists(dir_data):
-                    shutil.rmtree(dir_data)
-                self.utils.mdict(['-x', file_mdd, '-d', dir_data])
-            elif os.path.isfile(file_mdd) and templ_choice in ('C', 'D'):
-                dir_data = os.path.join(out_dir, "data")
-                if os.path.exists(dir_data):
-                    shutil.rmtree(dir_data)
-                self.utils.mdict(['-x', file_mdd, '-d', dir_data])
-            else:
-                print(Fore.MAGENTA + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
+            # file_mdd = os.path.splitext(xfile)[0] + '.mdd'
+            # if os.path.isfile(file_mdd) and templ_choice in ('A', 'B'):
+            #     dir_data = os.path.join(out_dir, "imgs")
+            #     if os.path.exists(dir_data):
+            #         shutil.rmtree(dir_data)
+            #     self.utils.mdict(['-x', file_mdd, '-d', dir_data])
+            # elif os.path.isfile(file_mdd) and templ_choice in ('C', 'D'):
+            #     dir_data = os.path.join(out_dir, "data")
+            #     if os.path.exists(dir_data):
+            #         shutil.rmtree(dir_data)
+            #     self.utils.mdict(['-x', file_mdd, '-d', dir_data])
+            # else:
+            #     print(Fore.MAGENTA + "WARN: " + Fore.RESET + "同路径下未找到相应的 mdd 文件, 将不会生成 imgs/data 文件夹")
             print(Fore.GREEN + "\n已提取原材料至目录: " + Fore.RESET + out_dir)
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "词典并非由 AutoMdxBuilder 制作, 不支持还原")
