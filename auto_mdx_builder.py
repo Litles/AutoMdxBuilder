@@ -352,6 +352,7 @@ class AutoMdxBuilder:
                         dict_name = pat.search(text).group(1)
                         templ_choice = pat.search(text).group(2)
                         multi_vols_flg = False
+                        volume_num = 1
                         text = pat.sub('', text)
                         extract_flg = True
                         break
