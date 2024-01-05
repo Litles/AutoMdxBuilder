@@ -145,6 +145,8 @@ AutoMdxBuilder 是 [[Mdict]](https://www.mdict.cn/wp/?lang=en) 词典制作相�
 
 当在 `build.toml` 中设置 `multi_volume = true` 时，将会按照多卷模式制作词典，这时原材料的命名相比一般模式会有些许不同，下面按模板列举：
 
+图像词典模板 A,B 在多卷模式下, 首先图像文件夹结构将是 imgs/vol_01, imgs/vol_02, imgs/vol_03... 即分卷子文件夹名称需加 vol_00 前缀
+
 * 模板 A: 除可以使用全局索引/目录文件 index.txt, toc.txt 外，也可以使用分卷文件 index_01.txt, index_02.txt ... 和 toc_01.txt, toc_02.txt ... （分卷文件中的页码无需加`[n]`前缀）
 * 模板 B: 除可以使用全局全索引/全目录文件 index_all.txt/toc_all.txt 外，也可以使用分卷文件 index_all_01.txt, index_all_02.txt ... 或 toc_all_01.txt, toc_all_02.txt ... （分卷文件中的页码无需加`[n]`前缀）
 * 模板 D: 同模板 B, 不过因为没有页码, 所以分卷文件和全局文件无区别
