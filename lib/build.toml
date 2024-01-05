@@ -5,6 +5,7 @@ templ_choice = "B"  # 【重要】选择要应用的模板, 同时需完成下�
 name = "文史工具书词典"  # 书名
 name_abbr = "WSGJSCD"   # 书名首字母缩写
 simp_trad_flg = false  # 是否需要繁简通搜
+add_extra_navis = false  # 是否需要添加额外的导航栏(index_all_navi_\d+.txt)
 multi_volume = false  # 是否是多卷的
 # 多卷模式下可以标示每个分卷名 (作用于 toc, index_all/toc_all)
 #vol_names = [

@@ -60,6 +60,7 @@ class Settings:
         self.pat_stem_text = re.compile(r'【L(\d+)】([^\t]+)\t([^\t\r\n]*)[\r\n]*$')         # 匹配文本词典全索引的主干条目 (有内容/无内容)
         self.pat_index = re.compile(r'([^\t]+)\t(\-?\d+)[\r\n]*$')                         # 匹配图像词典索引 (有页码)
         self.pat_index_vol = re.compile(r'([^\t]+)\t\[(\d+)\](\-?\d+)[\r\n]*$')            # [有卷标]匹配图像词典索引 (有页码)
+        self.pat_index_blank = re.compile(r'([^\t\r\n]+)[\t\r\n]*$')                       # 匹配导航 index_all, 无内容
         # toc
         self.pat_toc = re.compile(r'(\t*)([^\t]+)\t(\-?\d+)[\r\n]*$')               # 匹配图像词典目录 (有页码)
         self.pat_toc_vol = re.compile(r'(\t*)([^\t]+)\t\[(\d+)\](\-?\d+)[\r\n]*$')  # [有卷标]匹配图像词典目录 (有页码)
@@ -99,6 +100,7 @@ class Settings:
                 self.name = build["global"]["name"]  # 书名
                 self.name_abbr = build["global"]["name_abbr"].upper()  # 书名首字母缩写
                 self.simp_trad_flg = build["global"].get("simp_trad_flg", False)  # 是否要繁简通搜
+                self.add_extra_navis = build["global"].get("add_extra_navis", False)  # 是否要额外导航栏
                 # --- 区别设置 ---
                 self.templ_choice = build["global"]["templ_choice"].upper()  # 模板选择
                 self.multi_volume = build["global"].get("multi_volume", False)

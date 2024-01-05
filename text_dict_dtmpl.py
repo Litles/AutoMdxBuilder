@@ -39,22 +39,25 @@ class TextDictDtmpl:
             file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
             # (1) 生成文本(主)词条, 带层级导航
             headwords = self._make_entries_with_navi(check_result[0], file_1)
-            # (2) 生成近义词重定向
-            if check_result[1]:
-                headwords += self.func.make_relinks_syn(check_result[1], file_2)
-            # (3) 生成繁简通搜重定向
-            if self.settings.simp_trad_flg:
-                self.func.make_relinks_st(headwords, file_3)
-            # 2.合并成最终 txt 源文本
-            entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
-            print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
-            # 3.生成 info.html
-            if self.settings.multi_volume:
-                self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D', self.settings.volume_num)
+            if headwords:
+                # (2) 生成近义词重定向
+                if check_result[1]:
+                    headwords += self.func.make_relinks_syn(check_result[1], file_2)
+                # (3) 生成繁简通搜重定向
+                if self.settings.simp_trad_flg:
+                    self.func.make_relinks_st(headwords, file_3)
+                # 2.合并成最终 txt 源文本
+                entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
+                print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
+                # 3.生成 info.html
+                if self.settings.multi_volume:
+                    self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D', self.settings.volume_num)
+                else:
+                    self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D')
+                # 返回制作结果
+                return [file_final_txt, check_result[3], file_dict_info]
             else:
-                self.func.generate_info_html(check_result[2], file_dict_info, self.settings.name, 'D')
-            # 返回制作结果
-            return [file_final_txt, check_result[3], file_dict_info]
+                return None
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
@@ -216,7 +219,9 @@ class TextDictDtmpl:
                 # 4.章节重定向
                 for word in headwords_stem:
                     fw.write(f'{word}\n@@@LINK={self.settings.name_abbr}_{word}\n</>\n')
-        print("文本词条(有导航栏)已生成")
+            print("文本词条(有导航栏)已生成")
+        else:
+            pass
         return headwords
 
     def _check_index_alls(self, dir_input, dir_out):

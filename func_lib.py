@@ -350,7 +350,7 @@ class FuncLib():
         else:
             print(Fore.RED + "ERROR: " + Fore.RESET + "读取目录文件失败")
 
-    def read_index_all_file(self, file_index_all, img_dict_flg=True, vol_i=0):
+    def read_index_all_file(self, file_index_all, img_dict_flg=True, vol_i=0, navi_flg=False):
         done_flg = True
         dcts = []
         dct_chaps = []
@@ -365,6 +365,7 @@ class FuncLib():
             else:
                 pat1 = self.settings.pat_stem_text  # 匹配章节词头
                 pat2 = self.settings.pat_tab  # 匹配词条词头
+                pat3 = self.settings.pat_index_blank  # 匹配仅导航
             i = 0
             navi_bar = [None for i in range(10)]
             navi_bar_tmp = []
@@ -427,6 +428,19 @@ class FuncLib():
                         "level": -1,
                         "title": mth.group(1),
                         "body": body,
+                        "vol_n": vol_n
+                    }
+                    dct["navi_bar"] = navi_bar_tmp + [mth.group(1)]
+                    # 收集子词条
+                    tail["children"].append(mth.group(1))
+                # 匹配仅导航
+                elif navi_flg and pat3.match(line):
+                    mth = pat3.match(line)
+                    dct = {
+                        "id": i,
+                        "level": -1,
+                        "title": mth.group(1),
+                        "body": '',
                         "vol_n": vol_n
                     }
                     dct["navi_bar"] = navi_bar_tmp + [mth.group(1)]

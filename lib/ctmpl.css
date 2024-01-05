@@ -33,3 +33,13 @@ div.toc-title {
 div.entry-body {}
 /*数据来源*/
 p.source {text-align: right; color: grey; font-size: 90%;}
+
+/*----------三方补充------------*/
+div.tocTitle {text-align: center; margin-bottom: 8px; font-weight: bold; font-size: 120%;}  /*目录标题*/
+div.tocText {} /*词条内容*/
+div.title {}
+    span#titleText {color: #00578E; font-weight: bold; font-size: 110%;}  /*词目*/
+    span#titlePY {margin-left: 6px; color: yellow; font-weight: normal; font-size: 110%;}  /*拼音*/
+    span#titleTextEn {margin-left: 6px; color: #134f28; font-weight: normal; font-size: 95%;}  /*英文*/
+    span#titleOtherText {margin-left: 4px; color: grey; font-weight: normal; font-size: 95%;}  /*其他*/
+div.contentText {}

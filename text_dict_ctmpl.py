@@ -36,6 +36,9 @@ class TextDictCtmpl:
             file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_text)  # 文本词条
             file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_syn)  # 同义词重定向
             file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
+            # 判断是否要生成额外导航栏
+            # if check_result[4]:
+            #     file_0, navi_bars = self._gen_extra_navi_bars(check_result[4])
             # (1) 生成文本(主)词条
             headwords = self._make_entries_text(check_result[0], file_1)
             # (2) 生成同义词重定向
@@ -54,6 +57,12 @@ class TextDictCtmpl:
         else:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
+
+    def _gen_extra_navi_bars(self, lst_file_index_all):
+        """ 生成额外导航栏 """
+        # for file_index_all in lst_file_index_all:
+        #     dcts = self.func.read_index_all_file(file_index_all)
+        #     self.gen_top_navi_bar(dcts)
 
     def extract_final_txt(self, file_final_txt, out_dir, dict_name):
         """ 从模板C词典的源 txt 文本中提取 index, syns 信息 """
