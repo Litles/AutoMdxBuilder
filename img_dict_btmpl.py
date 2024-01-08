@@ -38,7 +38,8 @@ class ImgDictBtmpl:
             # 1.分步生成各部分源文本
             file_1 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_entries_with_navi)  # 带导航图像词条
             file_2 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_syn)  # 同义词重定向
-            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
+            file_3 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_index)  # 额外 index 重定向
+            file_4 = os.path.join(self.settings.dir_output_tmp, self.settings.fname_relinks_st)  # 繁简重定向
             # 0.准备图像
             if self.settings.multi_volume:
                 imgs, img_lens = self.func.prepare_imgs(check_result[1], dir_imgs_tmp, self.settings.volume_num)
@@ -53,11 +54,19 @@ class ImgDictBtmpl:
                 # (2) 生成同义词重定向
                 if check_result[2]:
                     headwords += self.func.make_relinks_syn(check_result[2], file_2)
-                # (3) 生成繁简通搜重定向
+                # (3) 额外 index 重定向 (该项未经过材料检查环节, 后续考虑加入)
+                if self.settings.add_extra_index:
+                    fp = os.path.join(self.settings.dir_input, self.settings.fname_index)
+                    index_check_num = self.func.text_file_check(fp)
+                    if index_check_num == 2:
+                        headwords += self._make_relinks_index(fp, file_3)
+                    else:
+                        print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"由于读取 {self.settings.fname_index} 失败, 将不生成额外的 index 重定向")
+                # (4) 生成繁简通搜重定向
                 if self.settings.simp_trad_flg:
-                    self.func.make_relinks_st(headwords, file_3)
+                    self.func.make_relinks_st(headwords, file_4)
                 # 2.合并成完整 txt 源文本
-                entry_total = self.func.merge_and_count([file_1, file_2, file_3], file_final_txt)
+                entry_total = self.func.merge_and_count([file_1, file_2, file_3, file_4], file_final_txt)
                 print(f'\n源文本 "{self.settings.fname_final_txt}"（共 {entry_total} 词条）生成完毕！')
                 # 3.生成 info.html
                 if self.settings.multi_volume:
@@ -72,10 +81,30 @@ class ImgDictBtmpl:
             print(Fore.RED + "\n材料检查不通过, 请确保材料准备无误再执行程序" + Fore.RESET)
             return None
 
+    def _make_relinks_index(self, file_index, file_out):
+        """ 生成 index 词目重定向 """
+        headwords = []
+        len_digit = self.settings.len_digit
+        if self.settings.multi_volume:
+            with open(file_out, 'w', encoding='utf-8') as fw:
+                for pair in self.func.read_index_file(file_index):
+                    str_link = f'{self.settings.name_abbr}[{str(pair["vol_n"]).zfill(2)}]_B{str(pair["page"]).zfill(len_digit)}'
+                    fw.write(f'{pair["title"]}\n@@@LINK={str_link}\n</>\n')
+                    headwords.append(pair["title"])
+        else:
+            with open(file_out, 'w', encoding='utf-8') as fw:
+                for pair in self.func.read_index_file(file_index):
+                    str_link = f'{self.settings.name_abbr}_B{str(pair["page"]).zfill(len_digit)}'
+                    fw.write(f'{pair["title"]}\n@@@LINK={str_link}\n</>\n')
+                    headwords.append(pair["title"])
+        print("重定向(extra_index)词条已生成")
+        return headwords
+
     def extract_final_txt(self, file_final_txt, out_dir, dict_name, file_css=None, multi_vols_flg=False, volume_num=1):
         """ 从模板B词典的源 txt 文本中提取 index_all, syns 信息 """
         dcts = []
         syns = []
+        index = []
         # (一) 分析提取源 txt 文本
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
@@ -113,9 +142,19 @@ class ImgDictBtmpl:
                 print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未识别到词典首字母缩写, 已设置默认值")
                 name_abbr = 'XXXXCD'
             # 3.提取 syns
+            if multi_vols_flg:
+                pat_ri = re.compile(name_abbr+r'(\[\d+\])_B(\d+)$')
+            else:
+                pat_ri = re.compile(name_abbr+r'_B(\d+)$')
             for t in self.settings.pat_relink.findall(text):
                 if not t[1].startswith(name_abbr):
                     syns.append((t[0], t[1]))
+                elif pat_ri.match(t[1]):
+                    mth = pat_ri.match(t[1])
+                    if multi_vols_flg:
+                        index.append((t[0], mth.group(1)+mth.group(2).lstrip('0')))
+                    else:
+                        index.append((t[0], mth.group(1).lstrip('0')))
         # (二) 整理输出提取结果
         # 1.index_all.txt
         dcts.sort(key=lambda dct: dct["id"], reverse=False)
@@ -133,7 +172,12 @@ class ImgDictBtmpl:
             with open(os.path.join(out_dir, 'syns.txt'), 'w', encoding='utf-8') as fw:
                 for s in syns:
                     fw.write(f'{s[0]}\t{s[1]}\n')
-        # 3.build.toml 文件
+        # 3.index.txt
+        if index:
+            with open(os.path.join(out_dir, 'index.txt'), 'w', encoding='utf-8') as fw:
+                for s in index:
+                    fw.write(f'{s[0]}\t{s[1]}\n')
+        # 4.build.toml 文件
         self.settings.load_build_toml(os.path.join(self.settings.dir_lib, self.settings.build_tmpl), False)
         self.settings.build["global"]["templ_choice"] = "B"
         self.settings.build["global"]["name"] = dict_name
@@ -143,6 +187,8 @@ class ImgDictBtmpl:
             self.settings.build["template"]["b"]["body_start"] = body_start[0]
         else:
             self.settings.build["template"]["b"]["body_start"] = body_start
+        if index:
+            self.settings.build["template"]["b"]["add_extra_index"] = True
         # 判断分栏选项
         if file_css and os.path.split(file_css)[1].lower() == name_abbr.lower()+'.css':
             with open(file_css, 'r', encoding='utf-8') as fr:

@@ -50,6 +50,7 @@ class Settings:
         self.fname_entries_with_navi_text = 'entries_with_navi_text.txt'
         self.fname_relinks_syn = 'relinks_syn.txt'
         self.fname_relinks_st = 'relinks_st.txt'
+        self.fname_relinks_index = 'relinks_index.txt'  # template B
         self.fname_relinks_headword = 'relinks_headword.txt'
         self.file_log = os.path.join(self.dir_bundle, '_log.log')
 
@@ -87,6 +88,7 @@ class Settings:
         self.multi_volume = False
         self.volume_num = 1
         self.vol_names = [None]
+        self.add_extra_index = False  # template B
 
     def load_build_toml(self, file_toml, pdf_flg=False, outside_flg=True):
         build_flg = True
@@ -115,6 +117,7 @@ class Settings:
                                 item["ref"] = item["a"]
                     else:
                         label = 'b'
+                        self.add_extra_index = build["template"][label].get("add_extra_index", False)
                     # --- 2.共有部分 ----
                     # body_start
                     self.body_start = build["template"][label]["body_start"]  # 正文起始页为第几张图(>=1)

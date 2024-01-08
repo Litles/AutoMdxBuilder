@@ -514,6 +514,7 @@ class FuncLib():
         words = []
         # 1.读取重定向索引
         syns = []
+        fname = os.path.split(file_syns)[1]
         with open(file_syns, 'r', encoding='utf-8') as fr:
             i = 1
             for line in fr:
@@ -521,7 +522,7 @@ class FuncLib():
                 if mth:
                     syns.append({"syn": mth.group(1), "origin": mth.group(2)})
                 else:
-                    print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"第 {i} 行未匹配, 已忽略")
+                    print(Fore.MAGENTA + "WARN: " + Fore.RESET + f"{fname} 第 {i} 行未匹配, 已忽略")
                 i += 1
         # 2.生成重定向
         with open(file_out, 'w', encoding='utf-8') as fw:

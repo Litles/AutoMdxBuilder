@@ -61,8 +61,10 @@ AutoMdxBuilder 是 [[Mdict]](https://www.mdict.cn/wp/?lang=en) 词典制作相�
 * （必须）`imgs` 文件夹：存放图像文件，同模板A
 * （可选）`index_all.txt`: 全索引文件
 * （可选）`toc_all.txt`: 全目录文件
+* （可选）`index.txt`: 附加索引文件
 
 > index_all 与 toc_all 是等价的, 按偏好使用其中一种即可
+> 如果在 index_all 之外还有独立的词条, 可以设置 add_extra_index = true, 并将那些词条以 index.txt 文件的形式作为补充
 
 #### 3.文本词典 (模板C)
 

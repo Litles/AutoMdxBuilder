@@ -72,7 +72,7 @@ class TextDictCtmpl:
         with open(file_final_txt, 'r', encoding='utf-8') as fr:
             text = fr.read()
             # 1.提取 index_all
-            pat_index = re.compile(r'^<div class="index-all" style="display:none;">(\d+)\|(.+?)</div>.+?<div class="entry-body">(.+?)</div>$', flags=re.M+re.S)
+            pat_index = re.compile(r'^<div class="index" style="display:none;">(\d+)\|(.+?)</div>.+?<div class="entry-body">(.+?)</div>$', flags=re.M+re.S)
             for t in pat_index.findall(text):
                 dct = {
                     "id": t[0],
@@ -124,7 +124,7 @@ class TextDictCtmpl:
                         mth = self.settings.pat_tab.match(line)
                         part_title = f'{mth.group(1)}\n'
                         part_css = f'<link rel="stylesheet" type="text/css" href="{self.settings.name_abbr.lower()}.css"/>\n'
-                        part_index = f'<div class="index-all" style="display:none;">{str(i).zfill(10)}|{mth.group(1)}</div>\n'
+                        part_index = f'<div class="index" style="display:none;">{str(i).zfill(10)}|{mth.group(1)}</div>\n'
                         if not self.settings.add_headwords:
                             part_headword = ''
                         else:

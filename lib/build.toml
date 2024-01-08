@@ -40,7 +40,8 @@ body_end_page = 99999  # （可选）最大正文页码 (用于自适应分栏�
 #   可选材料: syns,  info
 body_start = 1  # 正文起始页为第几张图(>=1)
 auto_split_columns = 1  # （可选）自适应分栏数 (默认1表示不分栏)
-body_end_page = 99999  # （可选）最大正文词条索引 (用于自适应分栏范围的判断, 默认到最后一页)
+body_end_page = 99999  # （可选）最大正文词条页码 (用于自适应分栏范围的判断, 默认到最后一页)
+add_extra_index = false  # 添加额外的 index.txt 文件
 
 
 [template.c]
