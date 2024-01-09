@@ -517,45 +517,41 @@ class AutoMdxBuilder:
             out_file = os.path.join(os.path.split(dir_amb)[0], self.settings.name+'.pdf')
         else:
             out_file = os.path.join(dir_amb, self.settings.name+'.pdf')
+        # 准备临时书签文件夹
         dir_bkmk_bk = os.path.join(self.settings.dir_lib, 'bkmk')
         dir_bkmk = os.path.join(self.settings.dir_output_tmp, 'bkmk')
         if os.path.exists(dir_bkmk):
             shutil.rmtree(dir_bkmk)
         os.makedirs(dir_bkmk)
-        shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf.itf"), os.path.join(dir_bkmk, "FreePic2Pdf.itf"))
-        shutil.copy(os.path.join(dir_bkmk_bk, "FreePic2Pdf_bkmk.txt"), os.path.join(dir_bkmk, "FreePic2Pdf_bkmk.txt"))
         # 1.生成临时书签
-        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-8') as fr:
-            text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start), fr.read())
-            fr.seek(0)
-            fr.truncate()
-            fr.write(text)
+        with open(os.path.join(dir_bkmk, 'FreePic2Pdf.itf'), 'w', encoding='utf-8') as fw:
+            with open(os.path.join(dir_bkmk_bk, 'FreePic2Pdf.itf'), 'r+', encoding='utf-8') as fr:
+                text = re.sub(r'(?<=BasePage=|TextPage=)\d+', str(self.settings.body_start[0]), fr.read())
+            fw.write(text)
+        with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'w', encoding='utf-8') as fw:
+            fw.write('正文\t1\n')
         toc_flg = False
         for fname in os.listdir(dir_amb):
-            if fname == 'toc.txt':
-                with open(os.path.join(dir_amb, fname), 'r', encoding='utf-8') as fr:
-                    text = fr.read()
-                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-8') as fr:
-                    fr.seek(0)
-                    fr.truncate()
-                    fr.write(text)
+            if fname in ('toc.txt', 'toc_all.txt'):
+                with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'w', encoding='utf-8') as fw:
+                    with open(os.path.join(dir_amb, fname), 'r', encoding='utf-8') as fr:
+                        text = fr.read()
+                    fw.write(text)
                 toc_flg = True
                 break
             elif fname == 'index_all.txt':
                 toc_tmp = os.path.join(self.settings.dir_output_tmp, 'toc_all.txt')
                 if self.func.index_all_to_toc(os.path.join(dir_amb, fname), toc_tmp):
-                    with open(toc_tmp, 'r', encoding='utf-8') as fr:
-                        text = fr.read()
-                    with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'r+', encoding='utf-8') as fr:
-                        fr.seek(0)
-                        fr.truncate()
-                        fr.write(text)
+                    with open(os.path.join(dir_bkmk, 'FreePic2Pdf_bkmk.txt'), 'w', encoding='utf-8') as fw:
+                        with open(toc_tmp, 'r', encoding='utf-8') as fr:
+                            text = fr.read()
+                        fw.write(text)
                 toc_flg = True
                 break
             else:
                 pass
         if not toc_flg:
-            print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未找到 toc.txt/index_all.txt, 生成的 PDF 将不带书签")
+            print(Fore.MAGENTA + "WARN: " + Fore.RESET + "未找到 toc.txt/toc_all.txt/index_all.txt, 生成的 PDF 将不带书签")
         # 2.将图片合成PDF
         if os.path.isdir(os.path.join(dir_amb, 'imgs')):
             self.utils.combine_img_to_pdf_fp2p(os.path.join(dir_amb, 'imgs'), out_file)

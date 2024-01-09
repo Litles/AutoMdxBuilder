@@ -481,6 +481,9 @@ class FuncLib():
         # 检查
         if len(tail_ids+stem_ids) != len(set(tail_ids+stem_ids)):
             done_flg = False
+            set_tail_ids = set(tail_ids)
+            set_stem_ids = set(stem_ids)
+            print("层级矛盾行: ", set_tail_ids.intersection(set_stem_ids))
             print(Fore.RED + "ERROR: " + Fore.RESET + f"文件 {file_index_all} 解析出现矛盾, 请检查索引顺序")
         else:
             # 整合所有信息
