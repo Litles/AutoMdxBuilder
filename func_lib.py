@@ -554,6 +554,26 @@ class FuncLib():
                     to_words.append(to_word)
         print("重定向(繁简)词条已生成")
 
+    def make_relinks_split(self, file_in, file_out, n_chars=2):
+        relinks = []
+        pat = re.compile(r'[；，。\?\!\,\.\;]+')
+        with open(file_in, 'r', encoding='utf-8') as fr:
+            for line in fr:
+                headword = line.rstrip()
+                for s in pat.split(headword):
+                    if (s != headword) and (not pat.match(s)) and (len(s) >= n_chars):
+                        relink = s + '\t' + headword + '\n'
+                        if relink not in relinks:
+                            relinks.append(relink)
+        if relinks:
+            with open(file_out, 'w', encoding='utf-8') as fw:
+                for relink in relinks:
+                    fw.write(relink)
+            return True
+        else:
+            print(Fore.RED + "ERROR: " + Fore.RESET + "分词结果为空")
+            return False
+
     def simp_trad_trans(self, file_in, file_out, trans_type):
         """ 繁简转换 """
         if trans_type == 'T':

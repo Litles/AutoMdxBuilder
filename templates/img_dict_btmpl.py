@@ -427,6 +427,8 @@ class ImgDictBtmpl:
                 print(Fore.RED + "ERROR: " + Fore.RESET + f"{dname} 图像数量不足(少于起始页码)")
             elif n < max_index - min_index:
                 print(Fore.RED + "ERROR: " + Fore.RESET + f"{dname} 图像数量不足(少于索引范围)")
+                print("图像数量", "最小索引", "最大索引")
+                print(n, min_index, max_index)
             elif n < max_index+self.settings.body_start[vol_i]-1:
                 print(Fore.RED + "ERROR: " + Fore.RESET + f"{dname} 图像数量不足(少于设定范围)")
             else:

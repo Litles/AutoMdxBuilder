@@ -13,10 +13,10 @@ import shutil
 from colorama import Fore, just_fix_windows_console
 from settings import Settings
 from func_lib import FuncLib
-from img_dict_atmpl import ImgDictAtmpl
-from img_dict_btmpl import ImgDictBtmpl
-from text_dict_ctmpl import TextDictCtmpl
-from text_dict_dtmpl import TextDictDtmpl
+from templates.img_dict_atmpl import ImgDictAtmpl
+from templates.img_dict_btmpl import ImgDictBtmpl
+from templates.text_dict_ctmpl import TextDictCtmpl
+from templates.text_dict_dtmpl import TextDictDtmpl
 from ebook_utils import EbookUtils
 
 
@@ -112,6 +112,21 @@ class AutoMdxBuilder:
             file_index_all = os.path.join(os.path.split(file_index)[0], 'index_all.txt')
             self.func.merge_to_index_all(file_toc, file_index, file_index_all)
         elif sel == 13:
+            # --- 索引扩充(通过标点符号等分词), 提升查得率 ---
+            p = input("请输入词头文件路径: ").strip('"')
+            if os.path.isfile(p) and self.func.text_file_check(p) == 2:
+                file_result = os.path.splitext(p)[0]+'_split'+os.path.splitext(p)[1]
+                inp = input("输入分词最少字符数(大于0, 回车默认长度为2): ")
+                n_chars = 2
+                if re.match(r'\d+$', inp) and int(inp) > 0:
+                    n_chars = int(inp)
+                else:
+                    print(Fore.YELLOW + "INFO: " + Fore.RESET + "输入未识别, 已使用默认长度2")
+                if self.func.make_relinks_split(p, file_result, n_chars):
+                    print(Fore.GREEN + "\n转换完成, 生成在同目录下" + Fore.RESET)
+            else:
+                print(Fore.RED + "ERROR: " + Fore.RESET + "路径输入有误")
+        elif sel == 14:
             # --- 繁体简体 txt 文本文件互转 ---
             p = input("请输入要转换的文本文件路径: ").strip('"')
             if os.path.isfile(p) and self.func.text_file_check(p) == 2:
@@ -575,7 +590,8 @@ def print_menu():
     print(Fore.CYAN + "  10" + Fore.RESET + ".从 PDF文件/pdg文件夹 生成预备原材料" + Fore.YELLOW + " (还需手动检查完善)" + Fore.RESET)
     print(Fore.CYAN + "  11" + Fore.RESET + ".toc_all 和 index_all 互转")
     print(Fore.CYAN + "  12" + Fore.RESET + ".合并 toc 和 index 为 index_all")
-    print(Fore.CYAN + "  13" + Fore.RESET + ".繁体简体 txt 文本文件互转")
+    print(Fore.CYAN + "  13" + Fore.RESET + ".索引扩充(通过标点符号等分词), 提升查得率")
+    print(Fore.CYAN + "  14" + Fore.RESET + ".繁体简体 txt 文本文件互转")
     print("\n(二) 制作词典")
     print(Fore.CYAN + "  20" + Fore.RESET + ".生成词典" + Fore.YELLOW + " (需准备好原材料)" + Fore.RESET)
     print("\n(三) 还原词典")
@@ -592,15 +608,14 @@ def print_menu():
 
 def main():
     # 程序开始
-    tmp_set = Settings()
-    print(Fore.CYAN + f"欢迎使用 AutoMdxBuilder {tmp_set.version}, 下面是功能选单:" + Fore.RESET)
+    amb = AutoMdxBuilder()
+    print(Fore.CYAN + f"欢迎使用 AutoMdxBuilder {amb.settings.version}, 下面是功能选单:" + Fore.RESET)
     while True:
         print_menu()
         sel = input('\n请输入数字（回车或“0”退出程序）: ')
         # 执行选择
         if re.match(r'\d+$', sel) and int(sel) in range(1, 50):
             print('\n------------------')
-            amb = AutoMdxBuilder()
             amb.auto_processing(int(sel))
             print('\n\n------------------------------------')
             # 判断是否继续

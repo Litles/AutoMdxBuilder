@@ -1,0 +1,20 @@
+{
+   "scope": "module_copy",
+   "completions":
+   [
+      {
+        "trigger": "copy.copy()",
+        "contents": "copy.copy(${1})",
+        "annotation":"[copy] Func",
+        "kind": [3, "f", "Module Func"],
+        "details": "copy.copy(x)"
+      },
+      {
+        "trigger": "copy.deepcopy()",
+        "contents": "copy.deepcopy(${1})",
+        "annotation":"[copy] Func",
+        "kind": [3, "f", "Module Func"],
+        "details": "copy.deepcopy(x[, memo])"
+      }
+   ]
+}
