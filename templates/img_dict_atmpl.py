@@ -537,6 +537,8 @@ class ImgDictAtmpl:
                 pass_flg = False
             elif n < max_index+self.settings.body_start[vol_i]-1:
                 print(Fore.RED + "ERROR: " + Fore.RESET + f"{dname} 图像数量不足(少于设定范围)")
+                print("图像数量", "起始页", "最大索引")
+                print(n, self.settings.body_start[vol_i], max_index)
                 pass_flg = False
         return pass_flg
 
