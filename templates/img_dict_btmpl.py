@@ -431,6 +431,8 @@ class ImgDictBtmpl:
                 print(n, min_index, max_index)
             elif n < max_index+self.settings.body_start[vol_i]-1:
                 print(Fore.RED + "ERROR: " + Fore.RESET + f"{dname} 图像数量不足(少于设定范围)")
+                print("图像数量", "起始页", "最大索引")
+                print(n, self.settings.body_start[vol_i], max_index)
             else:
                 # 收集乱序词条
                 if len(mess_items) > 0:
